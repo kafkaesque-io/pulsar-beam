@@ -1,5 +1,10 @@
 name: Build and test Go
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
 jobs:
   lint:
     name: Lint
@@ -12,6 +17,9 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
 
       - name: Lint Go Code
         run: |
@@ -31,11 +39,22 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
 
       - name: Run Unit tests.
         run: |
+          pwd
+          echo ${HOME}
+          echo ${GITHUB_WORKSPACE}
+          echo ${GOPATH}
+          echo ${GOROOT}
+          ./go-dep.sh
           cd src/unit-test
           go test -v ./...
+        env:
+           GOPATH: /home/runner/work/pulsar-beam/go
 
   build:
     name: Build
@@ -49,8 +68,15 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
 
       - name: Build
-        run: 
+        run: |
+          ./go-dep.sh
           cd src
           go build ./...
+        env:
+           GOPATH: /home/runner/work/pulsar-beam/go
+
