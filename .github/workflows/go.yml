@@ -12,6 +12,9 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
 
       - name: Lint Go Code
         run: |
@@ -31,9 +34,17 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
 
       - name: Run Unit tests.
         run: |
+          pwd
+          echo ${HOME}
+          echo ${GITHUB_WORKSPACE}
+          echo ${GOPATH}
+          echo ${GOROOT}
           cd src/unit-test
           go test -v ./...
 
@@ -49,6 +60,9 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
 
       - name: Build
         run: 
