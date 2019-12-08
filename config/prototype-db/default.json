@@ -1,0 +1,17 @@
+[
+    {
+        "Webhooks": [
+           {
+               "URL": "http://localhost:8089/webhook/",
+               "Headers": [
+                   "Content-type: application/json"
+               ]
+           }
+        ],
+        "TopicConfig": {
+            "TopicURL": "persistent://ming-luo/local-useast1-gcp/test-topic",
+            "Token": "please provide a valid token",
+            "PulsarURL": "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
+        }
+    }
+]

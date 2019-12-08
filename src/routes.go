@@ -23,7 +23,7 @@ var routes = Routes{
 	Route{
 		"Receive",
 		"POST",
-		"/v1/{accountId}",
+		"/v1/{tenant}",
 		ReceiveHandler,
 	},
 }
