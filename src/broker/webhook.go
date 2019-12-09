@@ -87,7 +87,7 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
 	if (code >= 200 && code < 300) || code == http.StatusUnprocessableEntity {
 		c.Ack(msg)
 	} else {
-		// TODO: send the failed events to another storage for later retry
+		// replying on Pulsar to redeliver
 		log.Println("failed to push to webhook")
 	}
 }
@@ -109,11 +109,11 @@ func ConsumeLoop(url, token, topic, webhookURL string) error {
 		} else {
 			data := string(msg.Payload())
 			// log.Println("Received message : ", data)
-			go pushAndAck(c, msg, webhookURL, data)
+			pushAndAck(c, msg, webhookURL, data)
 		}
 	}
 
-	log.Printf("topic %s consumer loop ended", topic)
+	log.Printf("error topic %s consumer loop ended", topic)
 	return nil
 }
 
