@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pulsar-beam/src/pulsardriver"
 )
@@ -57,8 +58,8 @@ func Init() {
 	go run()
 }
 
-// PushWebhook sends data to a webhook interface
-func pushWebhook(url, data string) {
+// pushWebhook sends data to a webhook interface
+func pushWebhook(url, data string) int {
 
 	client := retryablehttp.NewClient()
 	client.RetryWaitMin = 64 * time.Second
@@ -67,18 +68,28 @@ func pushWebhook(url, data string) {
 	body, err2 := json.Marshal(JSONData{data})
 	if err2 != nil {
 		log.Fatalln(err2)
+		return http.StatusUnprocessableEntity
 	}
-
-	fmt.Println(JSONData{data})
-	fmt.Println(body)
 
 	res, err := client.Post(url, "application/json", body)
 
 	if err != nil {
 		log.Fatalln(err)
+		return http.StatusInternalServerError
 	}
 
 	log.Println(res.StatusCode)
+	return res.StatusCode
+}
+
+func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
+	code := pushWebhook(url, data)
+	if (code >= 200 && code < 300) || code == http.StatusUnprocessableEntity {
+		c.Ack(msg)
+	} else {
+		// TODO: send the failed events to another storage for later retry
+		log.Println("failed to push to webhook")
+	}
 }
 
 // ConsumeLoop consumes data from Pulsar topic
@@ -97,14 +108,12 @@ func ConsumeLoop(url, token, topic, webhookURL string) error {
 			log.Fatal(err)
 		} else {
 			data := string(msg.Payload())
-			fmt.Println("Received message : ", data)
-			pushWebhook(webhookURL, data)
+			// log.Println("Received message : ", data)
+			go pushAndAck(c, msg, webhookURL, data)
 		}
-
-		c.Ack(msg)
 	}
 
-	log.Println("consumer loop ended")
+	log.Printf("topic %s consumer loop ended", topic)
 	return nil
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,7 +16,8 @@ func init() {
 
 // RootPage - the root route handler
 func RootPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "test page!\n")
+	w.WriteHeader(http.StatusOK)
+	return
 }
 
 // ReceiveHandler - the message receiver handler

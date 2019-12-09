@@ -1,9 +1,8 @@
 package main
 
+import "log"
+
 // access database
-import (
-	"fmt"
-)
 
 const (
 	// ResourceNotFound -
@@ -12,6 +11,6 @@ const (
 
 // init
 func init() {
-	fmt.Println("initialize controller data")
+	log.Println("initialize controller data")
 
 }
