@@ -4,6 +4,11 @@ on:
     branches:
       - master
   pull_request:
+  # Also trigger on page_build, as well as release created events
+  page_build:
+  release:
+    types: # This configuration does not affect the page_build event above
+      - created 
 
 jobs:
   lint:
@@ -50,6 +55,10 @@ jobs:
           echo ${GITHUB_WORKSPACE}
           echo ${GOPATH}
           echo ${GOROOT}
+          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
+          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
+          ls ./*apache-pulsar-client*.deb
+          sudo apt install ./*apache-pulsar-client*.deb
           ./go-dep.sh
           cd src/unit-test
           go test -v ./...
@@ -74,6 +83,11 @@ jobs:
 
       - name: Build
         run: |
+          pwd
+          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
+          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
+          ls ./*apache-pulsar-client*.deb
+          sudo apt install ./*apache-pulsar-client*.deb
           ./go-dep.sh
           cd src
           go build ./...
