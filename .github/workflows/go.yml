@@ -55,6 +55,7 @@ jobs:
           echo ${GITHUB_WORKSPACE}
           echo ${GOPATH}
           echo ${GOROOT}
+          sudo apt-get install -y libc6-amd64 libc6 libstdc++6 gccgo-6
           sudo apt-get install -y g++ cmake libssl-dev libcurl4-openssl-dev liblog4cxx-dev libprotobuf-dev libboost-all-dev  libgtest-dev google-mock libjsoncpp-dev libxml2-utils protobuf-compiler python-setuptools
           wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-devel-2.4.1-1.x86_64.rpm
           wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-debuginfo-2.4.1-1.x86_64.rpm
