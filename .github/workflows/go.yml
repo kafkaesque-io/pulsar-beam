@@ -55,6 +55,10 @@ jobs:
           echo ${GITHUB_WORKSPACE}
           echo ${GOPATH}
           echo ${GOROOT}
+          wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-devel-2.4.1-1.x86_64.rpm
+          wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-debuginfo-2.4.1-1.x86_64.rpm
+          wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-2.4.1-1.x86_64.rpm
+          rpm -ivh apache-pulsar-client*.rpm
           ./go-dep.sh
           cd src/unit-test
           go test -v ./...
@@ -79,6 +83,11 @@ jobs:
 
       - name: Build
         run: |
+          pwd
+          wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-devel-2.4.1-1.x86_64.rpm
+          wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-debuginfo-2.4.1-1.x86_64.rpm
+          wget -c https://archive.apache.org/dist/pulsar/pulsar-2.4.1/RPMS/apache-pulsar-client-2.4.1-1.x86_64.rpm
+          rpm -ivh apache-pulsar-client*.rpm
           ./go-dep.sh
           cd src
           go build ./...

@@ -10,8 +10,7 @@
         ],
         "TopicConfig": {
             "TopicURL": "persistent://ming-luo/local-useast1-gcp/test-topic",
-            "Token": "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJtaW5nLWx1by01ZDRlZjU1MjFhYWI3In0.d2v9QF8CB7g5QsLoythGUEfr9MXzoyDppIww3GJDhSp50KLZUKx-fS8iIM3h58GlQ96qjqHTQoktwK4jWHpEFQL0QXwFrW1fPqnbg4hkLBW2SiCKGQeUyBtSEYiPtvAT7ldhCUaJTFGh2PKhiK6nK-qa_ObJDaG9pnpEXV1nJOmvxqWLkj0NcC19F1lt0KH_vCsGWsa6OZCa9JCB1edGSaavXNptaRkvZ2rXqhDL4LAW9Zi1tj6lkNfeT9JFA8SVRJth0ZMmho1372kpdcu6p9WC7dy7knkdV5MmNkmzaudTF9FTilLb3GwRWN2z2q-KDhHsNRinLiLeL38Y4ZB6KA",
-
+            "Token": "please provide a valid pulsar token",
             "PulsarURL": "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
         }
     }
