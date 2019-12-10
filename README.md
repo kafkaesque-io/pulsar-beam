@@ -6,6 +6,8 @@ Beam is a http based streaming and queueing system that is backed up by Apache P
 2. To consume the data, data can be pushed to a webhook.
 3. To consume the data, data can be retrieved by an HTTP GET method.
 
+The development is in an early stage. Please email `contact@kafkaesque.io` for any inquiry or demo. Opening an issue and PR are welcomed!
+
 ## Advantages
 1. Since Beam speaks http, it is language and OS independent. You can take advantage of powerhouse of Apache Pulsar without limitation to choice of client and OS.
 
