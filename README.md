@@ -24,7 +24,7 @@ Immediately, Pulsar can be supported on Windows and any languages.
 ```
 These HTTP headers are required to map to Pulsar topic.
 1. Authorization -> Bearer token as Pulsar token
-2. TopicUrl -> a fully qualified Pulsar topic URL (with tenant/namespace/topic) is required
+2. TopicFn -> a full name of Pulsar topic (with tenant/namespace/topic) is required
 3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL is required
 
 ### Webhook registration
@@ -32,6 +32,10 @@ These HTTP headers are required to map to Pulsar topic.
 In the current prototype, webhook registration is specified in ./config/prototype-db/default.json.
 
 The registration will be moved to a permenant database soon.
+
+### Sink source
+
+If a webhook's response contains a body and three headers including Authorization, TopicFn, and PulsarUrl, the beam server will send the body as a new event to another Pulsar's topic specified as in TopicFn and PulsarUrl.
 
 ## set up
 clone the repo at your gopath github.com/pulsar-beam folder.
