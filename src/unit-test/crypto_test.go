@@ -71,3 +71,15 @@ func TestController64EncodeWithEncryption(t *testing.T) {
 	errNil(t, err2)
 	equals(t, s, de)
 }
+
+func TestGenWriteKey(t *testing.T) {
+	// Create 1 million to make sure no duplicates
+	size := 1000000
+	set := make(map[string]bool)
+	for i := 0; i < size; i++ {
+		id := GenTopicKey()
+		set[id] = true
+	}
+	assert(t, size == len(set), "WriteKey duplicates found")
+
+}

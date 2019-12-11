@@ -9,7 +9,7 @@
            }
         ],
         "TopicConfig": {
-            "TopicURL": "persistent://ming-luo/local-useast1-gcp/test-topic",
+            "TopicFN": "persistent://ming-luo/local-useast1-gcp/test-topic",
             "Token": "please provide a valid pulsar token",
             "PulsarURL": "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
         }

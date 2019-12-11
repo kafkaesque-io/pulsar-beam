@@ -51,3 +51,12 @@ func ResponseJSON(message string, w http.ResponseWriter, statusCode int) {
 	w.WriteHeader(statusCode)
 	w.Write(jsonResponse)
 }
+
+// ReceiverHeader parses headers for Pulsar required configuration
+func ReceiverHeader(h *http.Header) (token, topicFN, pulsarURL string, err bool) {
+	token = strings.TrimSpace(strings.Replace(h.Get("Authorization"), "Bearer", "", 1))
+	topicFN = h.Get("TopicFn")
+	pulsarURL = h.Get("PulsarUrl")
+	return token, topicFN, pulsarURL, token == "" || topicFN == ""
+
+}

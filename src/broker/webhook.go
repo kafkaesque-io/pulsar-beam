@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pulsar-beam/src/pulsardriver"
+	"github.com/pulsar-beam/src/util"
 )
 
 // A webhook broker that reads configuration from a file
@@ -59,33 +61,58 @@ func Init() {
 }
 
 // pushWebhook sends data to a webhook interface
-func pushWebhook(url, data string) int {
+func pushWebhook(url, data string) (int, *http.Response) {
 
 	client := retryablehttp.NewClient()
-	client.RetryWaitMin = 64 * time.Second
-	client.RetryMax = 2
+	client.RetryWaitMin = 2 * time.Second
+	client.RetryWaitMax = 28 * time.Second
+	client.RetryMax = 1
 
 	body, err2 := json.Marshal(JSONData{data})
 	if err2 != nil {
 		log.Fatalln(err2)
-		return http.StatusUnprocessableEntity
+		return http.StatusUnprocessableEntity, nil
 	}
 
 	res, err := client.Post(url, "application/json", body)
 
 	if err != nil {
 		log.Fatalln(err)
-		return http.StatusInternalServerError
+		return http.StatusInternalServerError, nil
 	}
 
 	log.Println(res.StatusCode)
-	return res.StatusCode
+	return res.StatusCode, res
+}
+
+func toPulsar(r *http.Response) {
+	token, topicFN, pulsarURL, err := util.ReceiverHeader(&r.Header)
+	if err {
+		return
+	}
+	log.Printf("token %s topicURL %s puslarURL %s", token, topicFN, pulsarURL)
+
+	b, err2 := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err2 != nil {
+		log.Println(err2)
+		return
+	}
+	resBody := string(b)
+	log.Println(resBody)
+
+	err3 := pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b)
+	if err3 != nil {
+		return
+	}
 }
 
 func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
-	code := pushWebhook(url, data)
+	code, res := pushWebhook(url, data)
 	if (code >= 200 && code < 300) || code == http.StatusUnprocessableEntity {
 		c.Ack(msg)
+
+		go toPulsar(res)
 	} else {
 		// replying on Pulsar to redeliver
 		log.Println("failed to push to webhook")
@@ -108,7 +135,7 @@ func ConsumeLoop(url, token, topic, webhookURL string) error {
 			log.Fatal(err)
 		} else {
 			data := string(msg.Payload())
-			// log.Println("Received message : ", data)
+			log.Println("Received message : ", data)
 			pushAndAck(c, msg, webhookURL, data)
 		}
 	}
@@ -121,7 +148,7 @@ func run() {
 	log.Println("start webhook runner")
 	for _, cfg := range configs {
 		for _, whCfg := range cfg.Webhooks {
-			topic := cfg.TopicConfig.TopicURL
+			topic := cfg.TopicConfig.TopicFN
 			token := cfg.TopicConfig.Token
 			url := cfg.TopicConfig.PulsarURL
 			webhookURL := whCfg.URL
