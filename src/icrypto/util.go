@@ -4,11 +4,14 @@ package icrypto
 import (
 	"encoding/base64"
 	"fmt"
+	"math/rand"
 )
 
 var e AES
 
 const defaultSymKey string = "popl4190LKOI4862" //16 character length
+
+var defaultRunes = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // init
 func init() {
@@ -39,4 +42,18 @@ func DecryptWithBase64(str string) (string, error) {
 		return "", err
 	}
 	return string(decrypted), nil
+}
+
+// RandKey generates a random key in n length
+func RandKey(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = defaultRunes[rand.Intn(len(defaultRunes))]
+	}
+	return string(b)
+}
+
+// GenTopicKey generates a random key in 24 char length.
+func GenTopicKey() string {
+	return RandKey(24)
 }

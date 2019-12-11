@@ -21,7 +21,7 @@ const (
 
 // TopicConfig -
 type TopicConfig struct {
-	TopicURL  string
+	TopicFN   string
 	Token     string
 	Tenant    string
 	Status    TopicStatus
@@ -33,7 +33,7 @@ type TopicConfig struct {
 // Assumptions are made with no token verification for subsquent connections
 // No status support.
 type TopicConfig2 struct {
-	TopicURL  string
+	TopicFN   string
 	Token     string
 	PulsarURL string
 }
