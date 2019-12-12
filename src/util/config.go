@@ -27,8 +27,6 @@ type Configuration struct {
 var Config Configuration
 
 func init() {
-	log.Printf("read configuration")
-
 	// fromFile()
 	log.Printf("Configuration built - ")
 

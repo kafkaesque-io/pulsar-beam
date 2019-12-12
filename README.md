@@ -58,6 +58,9 @@ $ cd src
 $ go run *.go
 ```
 
+#### Server Mode
+In order to offer high performance and separate responsiblity, webhook and receiver endpoint can be running independently `-mode broker` or `-mode receiver`. By default, the server runs in a hybrid mode.
+
 ### How to run unit test
 ```bash
 $ cd src/unit-test
