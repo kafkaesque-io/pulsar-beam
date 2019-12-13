@@ -88,7 +88,7 @@ jobs:
           wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
           ls ./*apache-pulsar-client*.deb
           sudo apt install ./*apache-pulsar-client*.deb
-          ./go-dep.sh
+          go mod download
           cd src
           go build ./...
         env:
