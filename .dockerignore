@@ -1,0 +1,9 @@
+.vscode
+.git
+*.md
+LICENSE
+Makefile
+NOTICE
+arm/
+powerpc/
+mips/
