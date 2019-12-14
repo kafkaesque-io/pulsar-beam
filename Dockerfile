@@ -61,12 +61,25 @@ FROM ubuntu:latest
 WORKDIR /root/bin
 RUN mkdir /root/config/
 
+RUN apt-get update
+RUN apt-get install -y wget
+
+RUN wget --user-agent=Mozilla -O apache-pulsar-client.deb "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
+RUN wget --user-agent=Mozilla -O apache-pulsar-client-dev.deb "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
+
+RUN ls ./*apache-pulsar-client*.deb
+RUN apt install -y ./apache-pulsar-client.deb
+RUN apt install -y ./apache-pulsar-client-dev.deb
+
 # Copy the Pre-built binary file from the previous stage
 # COPY --from=builder $GOPATH/src/github.com/pulsar-beam/main .
 COPY --from=builder /go/src/github.com/pulsar-beam/main .
 
+RUN pwd
+RUN ls
+
 # Expose port 8080 to the outside world
-EXPOSE 8089
+EXPOSE 8080
 
 # Command to run the executable
 CMD ["./main"]

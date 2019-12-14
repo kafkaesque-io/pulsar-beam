@@ -66,3 +66,20 @@ In order to offer high performance and separate responsiblity, webhook and recei
 $ cd src/unit-test
 $ go test -v .
 ```
+
+### Docker-compose and Docker builds
+Run `sudo docker-compose up` to start the Pulsar beam server in hybrid mode with external database. 
+
+Here are steps to build docker image and run docker container in a file based configuration.
+
+1. Build docker image
+```
+$ sudo docker build -t pulsar-beam .
+```
+
+2. Run docker
+This is an example of file based user Pulsar topic configurations.
+
+```
+$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -v /home/ming/go/src/github.com/pulsar-beam/config:/root/config -p 8080:8080 --name=pbeam-server pulsar-beam
+```

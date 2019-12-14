@@ -1,0 +1,11 @@
+version: '3'
+services:
+  beam:
+    build: .
+    ports:
+    - "8080:8080"
+    volumes:
+    - /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt
+    - /home/ming/go/src/github.com/pulsar-beam/config:/root/config
+  redis:
+    image: redis
