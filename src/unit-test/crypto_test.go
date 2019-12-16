@@ -74,7 +74,7 @@ func TestController64EncodeWithEncryption(t *testing.T) {
 
 func TestGenWriteKey(t *testing.T) {
 	// Create 1 million to make sure no duplicates
-	size := 1000000
+	size := 100000
 	set := make(map[string]bool)
 	for i := 0; i < size; i++ {
 		id := GenTopicKey()
