@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/pulsar-beam/src/broker"
+	"github.com/pulsar-beam/src/util"
 	"github.com/rs/cors"
 )
 
@@ -21,6 +22,7 @@ const Hybrid = "hybrid"
 var mode = flag.String("mode", "hybrid", "server running mode")
 
 func main() {
+	util.Init()
 
 	flag.Parse()
 	log.Println("start server mode ", *mode)
@@ -42,7 +44,9 @@ func main() {
 		router := NewRouter()
 
 		handler := c.Handler(router)
-		log.Fatal(http.ListenAndServe(":8080", handler))
+		config := util.GetConfig()
+		port := util.AssignString(config.PORT, "8080")
+		log.Fatal(http.ListenAndServe(":"+port, handler))
 	}
 
 	for *mode == Broker {

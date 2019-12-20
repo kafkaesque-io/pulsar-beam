@@ -60,3 +60,15 @@ func ReceiverHeader(h *http.Header) (token, topicFN, pulsarURL string, err bool)
 	return token, topicFN, pulsarURL, token == "" || topicFN == ""
 
 }
+
+// AssignString returns the first non-empty string
+// It is equivalent the following in Javascript
+// var value = val0 || val1 || val2 || default
+func AssignString(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
