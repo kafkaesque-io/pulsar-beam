@@ -47,8 +47,17 @@ jobs:
         with:
           fetch-depth: 1
           path: go/src/github.com/pulsar-beam
-
-      - name: Run Unit tests.
+      - name: Install dependencies
+        run: npm install
+      - name: Install MongoDB
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mongodb
+      - name: Verify MongoDB Installation and Status
+        run: |
+          ls /var/lib/mongodb
+          sudo systemctl status mongodb
+      - name: Install dependencies
         run: |
           pwd
           echo ${HOME}
@@ -60,6 +69,8 @@ jobs:
           ls ./*apache-pulsar-client*.deb
           sudo apt install ./*apache-pulsar-client*.deb
           go mod download
+      - name: Run Unit tests.
+        run: |
           cd src/unit-test
           go test -v ./...
         env:

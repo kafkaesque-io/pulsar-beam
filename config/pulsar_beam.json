@@ -1,0 +1,5 @@
+{
+    "PORT": "3000",
+    "CLUSTER": "localhost",
+    "PB_DB_TYPE": "mongo"
+}
