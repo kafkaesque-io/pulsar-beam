@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pulsar-beam/src/model"
+	"github.com/pulsar-beam/src/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,6 +28,7 @@ var collectionName string = "topics"
 
 //Init is a Db interface method.
 func (s *MongoDb) Init() error {
+	dbName = util.AssignString(util.Config.CLUSTER, dbName)
 	var err error
 	clientOptions := options.Client().ApplyURI(connectionString)
 	// ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
@@ -41,9 +43,20 @@ func (s *MongoDb) Init() error {
 		return err
 	}
 
-	log.Println("connected to mongodb")
+	log.Println("connected to mongodb", dbName)
 
 	s.collection = s.client.Database(dbName).Collection(collectionName)
+
+	indexView := s.collection.Indexes()
+	indexMode := mongo.IndexModel{
+		Keys:    bson.M{"Key": 1},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err = indexView.CreateOne(context.Background(), indexMode)
+	if err != nil {
+		log.Println("database index creation failed")
+		return err
+	}
 
 	log.Println("Collection obtained type:", reflect.TypeOf(s.collection))
 
@@ -51,8 +64,9 @@ func (s *MongoDb) Init() error {
 }
 
 //Sync is a Db interface method.
-func (s *MongoDb) Sync() {
+func (s *MongoDb) Sync() error {
 	log.Println("sync")
+	return nil
 }
 
 //Health is a Db interface method
@@ -66,8 +80,8 @@ func (s *MongoDb) Health() bool {
 }
 
 // Close closes database
-func (s *MongoDb) Close() {
-	s.client.Disconnect(context.TODO())
+func (s *MongoDb) Close() error {
+	return s.client.Disconnect(context.TODO())
 }
 
 //NewMongoDb initialize a Mongo Db

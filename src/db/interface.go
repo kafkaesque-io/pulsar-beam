@@ -21,8 +21,8 @@ type Crud interface {
 // Ops interface specifies required database access operations
 type Ops interface {
 	Init() error
-	Sync()
-	Close()
+	Sync() error
+	Close() error
 	Health() bool
 }
 

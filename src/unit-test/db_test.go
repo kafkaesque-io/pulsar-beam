@@ -21,7 +21,8 @@ func TestMongoDbDriver(t *testing.T) {
 	mongodb, err := NewDb(dbTarget)
 	errNil(t, err)
 
-	mongodb.Sync()
+	err = mongodb.Sync()
+	errNil(t, err)
 	status := mongodb.Health()
 	equals(t, status, true)
 
@@ -58,4 +59,5 @@ func TestMongoDbDriver(t *testing.T) {
 	errNil(t, err)
 	equals(t, deletedKey, key)
 
+	errNil(t, mongodb.Close())
 }
