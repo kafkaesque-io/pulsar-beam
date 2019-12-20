@@ -53,8 +53,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mongodb
+      - name: Verify MongoDB installation
+        run: |
+          ls /var/lib/mongodb
       - name: Start MongoDB
-        run: sudo systemctl start mongod
+        run: |
+          sudo systemctl unmask mongod
+          sudo service mongod start
       - name: Install dependencies
         run: |
           pwd
