@@ -1,4 +1,4 @@
-package main
+package route
 
 import (
 	"log"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Logger - the global logger
+// Logger logs http traffic.
 func Logger(inner http.Handler, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

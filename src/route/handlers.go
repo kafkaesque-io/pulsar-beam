@@ -1,4 +1,4 @@
-package main
+package route
 
 import (
 	"io/ioutil"
@@ -14,8 +14,8 @@ func init() {
 	//where to initialize all DB connection
 }
 
-// RootPage - the root route handler
-func RootPage(w http.ResponseWriter, r *http.Request) {
+// StatusPage replies with basic status code
+func StatusPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	return
 }
@@ -43,6 +43,18 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+	return
+}
+
+// UpdateTopicHandler creates or updates a topic
+func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusCreated)
+	return
+}
+
+// DeleteTopicHandler deletes a topic
+func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	return
 }
