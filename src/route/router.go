@@ -1,4 +1,4 @@
-package main
+package route
 
 import (
 	"log"
@@ -7,13 +7,14 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/pulsar-beam/src/middleware"
+	"github.com/pulsar-beam/src/util"
 )
 
 // NewRouter - create new router for HTTP routing
-func NewRouter() *mux.Router {
+func NewRouter(mode *string) *mux.Router {
 
 	router := mux.NewRouter().StrictSlash(true)
-	for _, route := range routes {
+	for _, route := range GetEffectiveRoutes(mode) {
 		var handler http.Handler
 
 		handler = route.HandlerFunc
@@ -32,4 +33,16 @@ func NewRouter() *mux.Router {
 
 	log.Printf("router added\n")
 	return router
+}
+
+// GetEffectiveRoutes gets effective routes
+func GetEffectiveRoutes(mode *string) Routes {
+	switch *mode {
+	case util.Hybrid:
+		return append(receiverRoutes, restRoutes...)
+	case util.Receiver:
+		return receiverRoutes
+	default:
+		return restRoutes
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/pulsar-beam/src/db"
+	"github.com/pulsar-beam/src/route"
 	. "github.com/pulsar-beam/src/util"
 )
 
@@ -31,6 +32,13 @@ func TestDbKeyGeneration(t *testing.T) {
 	assert(t, first != db.GenKey("persistent://my-topic/local-useast1-gcp/cloudfunction-funnel-a", pulsarURL), "different key generates different hash")
 }
 
+func TestJoinString(t *testing.T) {
+	part0 := "a"
+	part1 := "b"
+	part2 := "cd"
+	assert(t, JoinString(part0, part2) == part0+part2, "JoinString test two string")
+	assert(t, JoinString(part1, part0, part2) == part1+part0+part2, "JoinString test three string")
+}
 func TestAssignString(t *testing.T) {
 	assert(t, "YesYo" == AssignString("", "", "YesYo"), "test default")
 	assert(t, "YesYo" == AssignString("", "YesYo", "test"), "test valid string in middle")
@@ -45,4 +53,33 @@ func TestLoadConfigFile(t *testing.T) {
 	config := GetConfig()
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")
 	assert(t, config.PbDbType == "mongo", "default config setting")
+}
+
+func TestEffectiveRoutes(t *testing.T) {
+	mode := "hybrid"
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == 4, "check hybrid required routes")
+	mode = "rest"
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == 2, "check rest required routes")
+	mode = "receiver"
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == 2, "check receiver required routes")
+}
+
+func TestMainControlMode(t *testing.T) {
+	mode := "receiver"
+	assert(t, IsBroker(&mode) == false, "")
+	mode = "broker"
+	assert(t, IsBroker(&mode), "")
+	assert(t, IsBrokerRequired(&mode), "")
+
+	mode = "hybrid"
+	assert(t, IsHTTPRouterRequired(&mode), "")
+	assert(t, IsBrokerRequired(&mode), "")
+
+	mode = "rest"
+	assert(t, IsHTTPRouterRequired(&mode), "")
+	assert(t, IsBrokerRequired(&mode) == false, "")
+	assert(t, IsBroker(&mode) == false, "")
+
+	mode = "oops"
+	assert(t, IsValidMode(&mode), "test invalid mode")
 }

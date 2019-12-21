@@ -1,4 +1,4 @@
-package main
+package route
 
 import "net/http"
 
@@ -13,17 +13,32 @@ type Route struct {
 // Routes list of HTTP Routes
 type Routes []Route
 
-var routes = Routes{
+var receiverRoutes = Routes{
 	Route{
 		"Root",
 		"GET",
-		"/",
-		RootPage,
+		"/status",
+		StatusPage,
 	},
 	Route{
 		"Receive",
 		"POST",
 		"/v1/{tenant}",
 		ReceiveHandler,
+	},
+}
+
+var restRoutes = Routes{
+	Route{
+		"Update a topic",
+		"POST",
+		"/v1/topic",
+		UpdateTopicHandler,
+	},
+	Route{
+		"Delete a topic",
+		"POST",
+		"/v1/topic",
+		DeleteTopicHandler,
 	},
 }
