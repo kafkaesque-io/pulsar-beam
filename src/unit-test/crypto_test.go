@@ -83,3 +83,27 @@ func TestGenWriteKey(t *testing.T) {
 	assert(t, size == len(set), "WriteKey duplicates found")
 
 }
+
+func TestJWTRSASignAndVerify(t *testing.T) {
+	publicKeyPath := "./example_public_key.pub"
+	privateKeyPath := "./example_private_key"
+	authen := NewRSAKeyPair(privateKeyPath, publicKeyPath)
+
+	tokenString, err := authen.GenerateToken("myadmin")
+	errNil(t, err)
+	assert(t, len(tokenString) > 1, "a token string can be generated")
+
+	token, err0 := authen.DecodeToken(tokenString)
+	errNil(t, err0)
+	assert(t, token.Valid, "validate a valid token")
+
+	valid, _ := authen.VerifyTokenSubject(tokenString, "myadmin")
+	assert(t, valid, "validate token's expected subject")
+
+	valid, _ = authen.VerifyTokenSubject(tokenString, "admin")
+	assert(t, valid == false, "validate token's mismatched subject")
+
+	pulsarGeneratedToken := "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwaWNhc3NvIn0.TZilYXJOeeCLwNOHICCYyFxUlwOLxa_kzVjKcoQRTJm2xqmNzTn-s9zjbuaNMCDj1U7gRPHKHkWNDb2W4MwQd6Nkc543E_cIHlJG82eKKIsGfAEQpnPJLpzz2zytgmRON6HCPDsQDAKIXHriKmbmCzHLOILziks0oOCadBGC79iddb9DjPku6sU0nByS8r8_oIrRCqV_cNsH1MInA6CRNYkPJaJI0T8i77ND7azTXwH0FTX_KE_yRmOkXnejJ14GEEcBM99dPGg8jCp-zOyfvrMIJjWsWzjXYExxjKaC85779ciu59YO3cXd0Lk2LzlyB4kDKZgPyqOgyQFIfQ1eiA"
+	valid, _ = authen.VerifyTokenSubject(pulsarGeneratedToken, "picasso")
+	assert(t, valid, "validate pulsar generated token and subject")
+}
