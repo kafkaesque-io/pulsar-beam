@@ -4,23 +4,28 @@ package middleware
 import (
 	"log"
 	"net/http"
+	"strings"
+
+	"github.com/pulsar-beam/src/util"
 )
 
 // Rate is the default global rate limit
-var Rate = NewSema(500)
+var Rate = NewSema(200)
 
 // Authenticate middleware function
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		key := r.Header.Get("topicKey")
+		tokenStr := strings.TrimSpace(strings.Replace(r.Header.Get("Authorization"), "Bearer", "", 1))
+		_, err := util.JWTAuth.DecodeToken(tokenStr)
 
-		// UUID as the topic key length validation
-		if len(key) != 36 {
+		// key := r.Header.Get("apikey")
+		if err == nil {
 			log.Printf("Authenticated \n")
 			next.ServeHTTP(w, r)
 		} else {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 		}
+
 	})
 }
 

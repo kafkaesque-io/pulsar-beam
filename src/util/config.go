@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"github.com/pulsar-beam/src/icrypto"
 	"log"
 	"os"
 	"reflect"
@@ -13,22 +14,29 @@ const DefaultConfigFile = "../config/pulsar_beam.json"
 
 // Configuration - this server's configuration
 type Configuration struct {
-	PORT     string `json:"PORT"`
-	CLUSTER  string `json:"CLUSTER"`
-	User     string `json:"User"`
-	Pass     string `json:"Pass"`
-	DbName   string `json:"DbName"`
-	PbDbType string `json:"PB_DB_TYPE"`
+	PORT             string `json:"PORT"`
+	CLUSTER          string `json:"CLUSTER"`
+	User             string `json:"User"`
+	Pass             string `json:"Pass"`
+	DbName           string `json:"DbName"`
+	PbDbType         string `json:"PbDbType"`
+	PulsarPublicKey  string `json:"PulsarPublicKey"`
+	PulsarPrivateKey string `json:"PulsarPrivateKey"`
 }
 
 // Config - this server's configuration instance
 var Config Configuration
+
+// JWTAuth is the RSA key pair for sign and verify JWT
+var JWTAuth *icrypto.RSAKeyPair
 
 // Init initializes configuration
 func Init() {
 	configFile := AssignString(os.Getenv("PULSAR_BEAM_CONFIG"), DefaultConfigFile)
 	log.Printf("Configuration built - %s", configFile)
 	ReadConfigFile(configFile)
+
+	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
 }
 
 // ReadConfigFile reads configuration file.
