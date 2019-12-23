@@ -81,9 +81,9 @@ func TestMongoDbDriver(t *testing.T) {
 	equals(t, topic.Token, resTopic2.Token)
 	equals(t, topic.PulsarURL, resTopic2.PulsarURL)
 
-	// deletedKey, err := mongodb2.Delete(topic.TopicFullName, topic.PulsarURL)
+	deletedKey, err := mongodb2.Delete(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
-	// equals(t, deletedKey, key)
+	equals(t, deletedKey, key)
 
 	errNil(t, mongodb.Close())
 }
