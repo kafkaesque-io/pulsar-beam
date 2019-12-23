@@ -56,12 +56,14 @@ func TestLoadConfigFile(t *testing.T) {
 }
 
 func TestEffectiveRoutes(t *testing.T) {
+	receiverRoutesLen := len(route.ReceiverRoutes)
+	restRoutesLen := len(route.RestRoutes)
 	mode := "hybrid"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == 4, "check hybrid required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+restRoutesLen), "check hybrid required routes")
 	mode = "rest"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == 2, "check rest required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == restRoutesLen, "check rest required routes")
 	mode = "receiver"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == 2, "check receiver required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == receiverRoutesLen, "check receiver required routes")
 }
 
 func TestMainControlMode(t *testing.T) {

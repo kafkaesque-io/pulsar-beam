@@ -10,6 +10,10 @@ import (
 
 var dbTarget = "mongo"
 
+func TestUnsupportedDbDriver(t *testing.T) {
+	_, err := NewDb("cockroach")
+	equals(t, err.Error(), "unsupported db type")
+}
 func TestMongoDbDriver(t *testing.T) {
 	// a test case 1) connect to a local mongodb
 	// 2) test with ping
@@ -25,6 +29,10 @@ func TestMongoDbDriver(t *testing.T) {
 	errNil(t, err)
 	status := mongodb.Health()
 	equals(t, status, true)
+
+	docs, err := mongodb.Load()
+	errNil(t, err)
+	equals(t, 0, len(docs))
 
 	topic := model.TopicConfig{}
 	topic.TopicFullName = "persistent://mytenant/local-useast1-gcp/yet-another-test-topic"
@@ -55,9 +63,27 @@ func TestMongoDbDriver(t *testing.T) {
 	}
 	equals(t, found, true)
 
-	deletedKey, err := mongodb.Delete(topic.TopicFullName, topic.PulsarURL)
+	resTopic, err := mongodb.GetByTopic(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
-	equals(t, deletedKey, key)
+	equals(t, topic.Token, resTopic.Token)
+	equals(t, topic.PulsarURL, resTopic.PulsarURL)
+
+	// test singleton
+	mongodb2, err := NewDb(dbTarget)
+	errNil(t, err)
+
+	docs2, err2 := mongodb2.Load()
+	errNil(t, err2)
+	equals(t, 1, len(docs2))
+
+	resTopic2, err := mongodb2.GetByKey(resTopic.Key)
+	errNil(t, err)
+	equals(t, topic.Token, resTopic2.Token)
+	equals(t, topic.PulsarURL, resTopic2.PulsarURL)
+
+	// deletedKey, err := mongodb2.Delete(topic.TopicFullName, topic.PulsarURL)
+	errNil(t, err)
+	// equals(t, deletedKey, key)
 
 	errNil(t, mongodb.Close())
 }

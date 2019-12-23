@@ -24,14 +24,13 @@ func NewRouter(mode *string) *mux.Router {
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(handler)
+			Handler(route.AuthFunc(handler))
 
 	}
+	// TODO rate limit can be added per route basis
 	router.Use(middleware.LimitRate)
-	router.Use(middleware.Authenticate)
-	// router.Use(auth.AuthenticateAuth0) // JWT based authentication
 
-	log.Printf("router added\n")
+	log.Println("router added")
 	return router
 }
 
@@ -39,10 +38,10 @@ func NewRouter(mode *string) *mux.Router {
 func GetEffectiveRoutes(mode *string) Routes {
 	switch *mode {
 	case util.Hybrid:
-		return append(receiverRoutes, restRoutes...)
+		return append(ReceiverRoutes, RestRoutes...)
 	case util.Receiver:
-		return receiverRoutes
+		return ReceiverRoutes
 	default:
-		return restRoutes
+		return RestRoutes
 	}
 }

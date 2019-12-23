@@ -3,10 +3,13 @@ package db
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"log"
+	"errors"
 
 	"github.com/pulsar-beam/src/model"
 )
+
+// dbConn is a singlton of Db instance
+var dbConn Db = nil
 
 // Crud interface specifies typical CRUD opertaions for database
 type Crud interface {
@@ -15,6 +18,7 @@ type Crud interface {
 	Update(topicCfg *model.TopicConfig) (string, error)
 	Create(topicCfg *model.TopicConfig) (string, error)
 	Delete(topicFullName, pulsarURL string) (string, error)
+	DeleteByKey(hashedTopicKey string) (string, error)
 	Load() ([]*model.TopicConfig, error)
 }
 
@@ -41,13 +45,16 @@ func GenKey(topicFullName, pulsarURL string) string {
 
 // NewDb is a database factory pattern to create a new database
 func NewDb(reqDbType string) (Db, error) {
-	var db Db
+	if dbConn != nil {
+		return dbConn, nil
+	}
+
 	var err error
 	switch reqDbType {
 	case "mongo":
-		db, err = NewMongoDb()
+		dbConn, err = NewMongoDb()
 	default:
-		log.Panic("unsupported db type")
+		err = errors.New("unsupported db type")
 	}
-	return db, err
+	return dbConn, err
 }
