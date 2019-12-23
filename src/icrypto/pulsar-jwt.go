@@ -28,9 +28,6 @@ const (
 
 var jwtRsaKeys *RSAKeyPair = nil
 
-var privateKeyPath = "../unit-test/private_key"
-var publicKeyPath = "../unit-test/public_key.pub"
-
 // NewRSAKeyPair creates a pair of RSA key for JWT token sign and verification
 func NewRSAKeyPair(privateKeyPath, publicKeyPath string) *RSAKeyPair {
 	if jwtRsaKeys == nil {
