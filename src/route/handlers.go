@@ -97,13 +97,17 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		resErr := ResponseErr{Error: err.Error()}
-		resJson, err := json.Marshal(resErr)
-		w.Write(resJson)
-		log.Println(err)
+		resJSON, err := json.Marshal(resErr)
+		w.Write(resJSON)
 		return
 	}
 
-	id, err := singleDb.Create(&doc)
+	id, err := singleDb.Update(&doc)
+	if err != nil {
+		// log.Println(err)
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
 	if len(id) > 1 {
 		savedDoc, err := singleDb.GetByKey(id)
 		if err != nil {
@@ -152,7 +156,7 @@ func getTopicKey(r *http.Request) (string, error) {
 	var err error
 	vars := mux.Vars(r)
 	topicKey, ok := vars["topicKey"]
-	// log.Printf("topic key is %v", topicKey)
+	log.Printf("topic key is %v", topicKey)
 	if !ok {
 		var topic model.TopicKey
 		decoder := json.NewDecoder(r.Body)

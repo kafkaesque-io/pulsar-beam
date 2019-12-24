@@ -85,5 +85,7 @@ func TestMongoDbDriver(t *testing.T) {
 	errNil(t, err)
 	equals(t, deletedKey, key)
 
-	errNil(t, mongodb.Close())
+	// TODO: find a place to test Close(); need to find out depedencies.
+	// Comment out because there are other test cases require database.
+	// errNil(t, mongodb.Close())
 }
