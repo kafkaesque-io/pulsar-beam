@@ -97,7 +97,7 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		resErr := ResponseErr{Error: err.Error()}
-		resJSON, err := json.Marshal(resErr)
+		resJSON, _ := json.Marshal(resErr)
 		w.Write(resJSON)
 		return
 	}
