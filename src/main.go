@@ -15,6 +15,7 @@ var mode = flag.String("mode", "hybrid", "server running mode")
 
 func main() {
 	util.Init()
+	route.Init()
 
 	flag.Parse()
 	log.Println("start server mode ", *mode)

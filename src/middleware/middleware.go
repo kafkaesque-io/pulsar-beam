@@ -9,18 +9,35 @@ import (
 	"github.com/pulsar-beam/src/util"
 )
 
+// AuthFunc is a function type to allow pluggable authentication middleware
+type AuthFunc func(next http.Handler) http.Handler
+
 // Rate is the default global rate limit
 var Rate = NewSema(200)
 
-// Authenticate middleware function
-func Authenticate(next http.Handler) http.Handler {
+// AuthVerifyJWT Authenticate middleware function
+func AuthVerifyJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenStr := strings.TrimSpace(strings.Replace(r.Header.Get("Authorization"), "Bearer", "", 1))
 		_, err := util.JWTAuth.DecodeToken(tokenStr)
 
 		// key := r.Header.Get("apikey")
 		if err == nil {
-			log.Printf("Authenticated \n")
+			log.Println("Authenticated")
+			next.ServeHTTP(w, r)
+		} else {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+
+	})
+}
+
+// AuthHeaderRequired is a very weak auth to verify token existence only.
+func AuthHeaderRequired(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenStr := strings.TrimSpace(strings.Replace(r.Header.Get("Authorization"), "Bearer", "", 1))
+
+		if len(tokenStr) > 1 {
 			next.ServeHTTP(w, r)
 		} else {
 			http.Error(w, "Forbidden", http.StatusForbidden)
@@ -31,7 +48,6 @@ func Authenticate(next http.Handler) http.Handler {
 
 // LimitRate rate limites against http handler
 // use semaphore as a simple rate limiter
-// TODO: should be added to inidividual endpoint
 func LimitRate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := Rate.Acquire()

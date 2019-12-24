@@ -115,7 +115,7 @@ func (s *MongoDb) Create(topicCfg *model.TopicConfig) (string, error) {
 
 // GetByTopic gets a document by the topic name and puslar URL
 func (s *MongoDb) GetByTopic(topicFullName, pulsarURL string) (*model.TopicConfig, error) {
-	key, err := getKeyFromNames(topicFullName, pulsarURL)
+	key, err := GetKeyFromNames(topicFullName, pulsarURL)
 	if err != nil {
 		return &model.TopicConfig{}, err
 	}
@@ -129,9 +129,7 @@ func (s *MongoDb) GetByKey(hashedTopicKey string) (*model.TopicConfig, error) {
 
 	err := result.Decode(&doc)
 	if err != nil {
-		if err.Error() == "mongo: no documents in result" {
-			return &model.TopicConfig{}, err
-		}
+		// if err.Error() == "mongo: no documents in result" {
 		return &model.TopicConfig{}, err
 	}
 	return &doc, nil
@@ -210,11 +208,16 @@ func (s *MongoDb) Update(topicCfg *model.TopicConfig) (string, error) {
 
 // Delete deletes a document
 func (s *MongoDb) Delete(topicFullName, pulsarURL string) (string, error) {
-	key, err := getKeyFromNames(topicFullName, pulsarURL)
+	key, err := GetKeyFromNames(topicFullName, pulsarURL)
 	if err != nil {
 		return "", err
 	}
-	result, err := s.collection.DeleteMany(context.TODO(), bson.M{"key": key})
+	return s.DeleteByKey(key)
+}
+
+// DeleteByKey deletes a document based on key
+func (s *MongoDb) DeleteByKey(hashedTopicKey string) (string, error) {
+	result, err := s.collection.DeleteMany(context.TODO(), bson.M{"key": hashedTopicKey})
 	if err != nil {
 		return "", err
 	}
@@ -222,7 +225,7 @@ func (s *MongoDb) Delete(topicFullName, pulsarURL string) (string, error) {
 	if result.DeletedCount > 1 {
 		return "", errors.New("many documents match the same key") //this is impossible
 	}
-	return key, nil
+	return hashedTopicKey, nil
 }
 
 func exists(key string, coll *mongo.Collection) (bool, error) {
@@ -240,10 +243,11 @@ func exists(key string, coll *mongo.Collection) (bool, error) {
 }
 
 func getKey(topicCfg *model.TopicConfig) (string, error) {
-	return getKeyFromNames(topicCfg.TopicFullName, topicCfg.PulsarURL)
+	return GetKeyFromNames(topicCfg.TopicFullName, topicCfg.PulsarURL)
 }
 
-func getKeyFromNames(name, url string) (string, error) {
+// GetKeyFromNames generate topic key based on topic full name and pulsar url
+func GetKeyFromNames(name, url string) (string, error) {
 	if url == "" || name == "" {
 		return "", errors.New("missing PulsarURL or TopicFullName")
 	}

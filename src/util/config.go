@@ -2,10 +2,11 @@ package util
 
 import (
 	"encoding/json"
-	"github.com/pulsar-beam/src/icrypto"
 	"log"
 	"os"
 	"reflect"
+
+	"github.com/pulsar-beam/src/icrypto"
 )
 
 // DefaultConfigFile - default config file
@@ -33,7 +34,7 @@ var JWTAuth *icrypto.RSAKeyPair
 // Init initializes configuration
 func Init() {
 	configFile := AssignString(os.Getenv("PULSAR_BEAM_CONFIG"), DefaultConfigFile)
-	log.Printf("Configuration built - %s", configFile)
+	log.Printf("Configuration built from file - %s", configFile)
 	ReadConfigFile(configFile)
 
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
@@ -72,7 +73,6 @@ func ReadConfigFile(configFile string) {
 	}
 
 	log.Println(Config)
-	log.Printf("Configuration built from the file - ")
 }
 
 //GetConfig returns a reference to the Configuration

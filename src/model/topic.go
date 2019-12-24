@@ -38,3 +38,9 @@ type TopicConfig struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
+
+// TopicKey represents a struct to identify a topic
+type TopicKey struct {
+	TopicFullName string `json:"TopicFullName"`
+	PulsarURL     string `json:"PulsarURL"`
+}
