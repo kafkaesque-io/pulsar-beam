@@ -1,4 +1,4 @@
-name: Build and test Go
+name: ci 
 on:
   push:
     branches:
@@ -11,8 +11,8 @@ on:
       - created 
 
 jobs:
-  lint:
-    name: Lint
+  analysis:
+    name: static analysis
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -33,8 +33,8 @@ jobs:
           cd src
           golint ./...
 
-  test:
-    name: Test
+  build_test:
+    name: build and test
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -49,6 +49,8 @@ jobs:
           path: go/src/github.com/pulsar-beam
       - name: Install MongoDB
         run: |
+          echo $GITHUB_EVENT_NAME
+          echo $GITHUB_EVENT_PATH
           sudo apt-get update
           sudo apt-get install -y mongodb
       - name: Verify MongoDB Installation and Status
@@ -67,6 +69,14 @@ jobs:
           ls ./*apache-pulsar-client*.deb
           sudo apt install ./*apache-pulsar-client*.deb
           go mod download
+      - name: Build Binary
+        run: |
+          cd src
+          go build ./...
+      - name: Go Vet
+        run: |
+          cd src
+          go vet ./...
       - name: Run Tests
         run: |
           cd src/unit-test
@@ -81,32 +91,17 @@ jobs:
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
 
-  build:
-    name: Build
+  sonar:
+    name: docker
     runs-on: ubuntu-latest 
-    needs: [lint, test]
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.13
-
       - name: Check out code
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
           path: go/src/github.com/pulsar-beam
 
-      - name: Build
+      - name: Build Docker Image
         run: |
           pwd
-          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
-          ls ./*apache-pulsar-client*.deb
-          sudo apt install ./*apache-pulsar-client*.deb
-          go mod download
-          cd src
-          go build ./...
-        env:
-           GOPATH: /home/runner/work/pulsar-beam/go
-
+          sudo docker build -t pulsar-beam .
