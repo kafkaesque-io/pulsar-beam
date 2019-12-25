@@ -13,6 +13,8 @@ import (
 type AuthFunc func(next http.Handler) http.Handler
 
 // Rate is the default global rate limit
+// This rate only limits the rate hitting on endpoint
+// It does not limit the underline resource access
 var Rate = NewSema(200)
 
 // AuthVerifyJWT Authenticate middleware function

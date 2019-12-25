@@ -22,6 +22,7 @@ func TestMongoDbDriver(t *testing.T) {
 	// 5) update a document
 	// 6) load/retreive all documents, iterate to find a document
 	// 7) delete a document
+	// 8) get a document to ensure it's deleted
 	mongodb, err := NewDb(dbTarget)
 	errNil(t, err)
 
@@ -85,5 +86,11 @@ func TestMongoDbDriver(t *testing.T) {
 	errNil(t, err)
 	equals(t, deletedKey, key)
 
-	errNil(t, mongodb.Close())
+	resTopic2, err = mongodb2.GetByKey(resTopic.Key)
+	assert(t, err != nil, "already deleted so returns error")
+	equals(t, err.Error(), "mongo: no documents in result")
+
+	// TODO: find a place to test Close(); need to find out depedencies.
+	// Comment out because there are other test cases require database.
+	// errNil(t, mongodb.Close())
 }
