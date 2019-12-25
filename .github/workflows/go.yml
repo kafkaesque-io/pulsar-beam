@@ -90,3 +90,18 @@ jobs:
           ./test_coverage.sh
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
+
+  sonar:
+    name: docker
+    runs-on: ubuntu-latest 
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
+
+      - name: Build Docker Image
+        run: |
+          pwd
+          sudo docker build -t pulsar-beam .
