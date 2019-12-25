@@ -97,4 +97,29 @@ func TestTopicHandler(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	equals(t, http.StatusOK, rr.Code)
 
+	// test to delete a non-existent topic
+	topicKey2 := model.TopicKey{}
+	topicKey2.TopicFullName = "persistent://mytenant/local-useast1-gcp/yet"
+	topicKey2.PulsarURL = "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
+	reqKeyJSON2, err := json.Marshal(topicKey2)
+	req, err = http.NewRequest(http.MethodDelete, "/v2/topic/", bytes.NewReader(reqKeyJSON2))
+	errNil(t, err)
+
+	rr2 := httptest.NewRecorder()
+	handler = http.HandlerFunc(DeleteTopicHandler)
+
+	handler.ServeHTTP(rr2, req)
+	equals(t, http.StatusNotFound, rr2.Code)
+
+	// test with a corrupted payload for deletion
+	reqKeyJSON, err = json.Marshal("broken payload")
+	req, err = http.NewRequest(http.MethodDelete, "/v2/topic/", bytes.NewReader(reqKeyJSON))
+	errNil(t, err)
+
+	rr = httptest.NewRecorder()
+	handler = http.HandlerFunc(DeleteTopicHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusUnprocessableEntity, rr.Code)
+
 }

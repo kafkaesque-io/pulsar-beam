@@ -176,7 +176,6 @@ func (s *MongoDb) Update(topicCfg *model.TopicConfig) (string, error) {
 		log.Println("not exists so to create one")
 		return s.Create(topicCfg)
 	}
-	log.Println("exists so to update")
 
 	filter := bson.M{
 		"key": bson.M{
@@ -217,6 +216,9 @@ func (s *MongoDb) Delete(topicFullName, pulsarURL string) (string, error) {
 
 // DeleteByKey deletes a document based on key
 func (s *MongoDb) DeleteByKey(hashedTopicKey string) (string, error) {
+	if ok, _ := exists(hashedTopicKey, s.collection); !ok {
+		return "", errors.New("topic does not exist")
+	}
 	result, err := s.collection.DeleteMany(context.TODO(), bson.M{"key": hashedTopicKey})
 	if err != nil {
 		return "", err

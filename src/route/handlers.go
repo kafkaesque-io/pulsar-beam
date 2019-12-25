@@ -37,7 +37,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		w.WriteHeader((http.StatusInternalServerError))
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -63,22 +63,19 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 	topicKey, err := getTopicKey(r)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		resJSON, _ := json.Marshal(ResponseErr{Error: err.Error()})
-		w.Write(resJSON)
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
 		return
 	}
 
 	doc, err := singleDb.GetByKey(topicKey)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusNotFound)
+		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
 	resJSON, err := json.Marshal(doc)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 	} else {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
@@ -94,11 +91,7 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 	var doc model.TopicConfig
 	err := decoder.Decode(&doc)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		resErr := ResponseErr{Error: err.Error()}
-		resJSON, _ := json.Marshal(resErr)
-		w.Write(resJSON)
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -127,13 +120,9 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 	topicKey, err := getTopicKey(r)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		resJSON, _ := json.Marshal(ResponseErr{Error: err.Error()})
-		w.Write(resJSON)
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
 		return
 	}
-	log.Println(topicKey)
 
 	doc, err := singleDb.DeleteByKey(topicKey)
 	if err != nil {
@@ -156,7 +145,6 @@ func getTopicKey(r *http.Request) (string, error) {
 	var err error
 	vars := mux.Vars(r)
 	topicKey, ok := vars["topicKey"]
-	log.Printf("topic key is %v", topicKey)
 	if !ok {
 		var topic model.TopicKey
 		decoder := json.NewDecoder(r.Body)

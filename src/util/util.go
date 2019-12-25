@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-// Response is for http reponse message.
-type Response struct {
-	Message string `json:"message"`
+// ResponseErr - Error struct for Http response
+type ResponseErr struct {
+	Error string `json:"error"`
 }
 
 // NewUUID generates a random UUID according to RFC 4122
@@ -37,9 +37,9 @@ func JoinString(strs ...string) string {
 	return sb.String()
 }
 
-// ResponseJSON builds a Http response.
-func ResponseJSON(message string, w http.ResponseWriter, statusCode int) {
-	response := Response{message}
+// ResponseErrorJSON builds a Http response.
+func ResponseErrorJSON(e error, w http.ResponseWriter, statusCode int) {
+	response := ResponseErr{e.Error()}
 
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {

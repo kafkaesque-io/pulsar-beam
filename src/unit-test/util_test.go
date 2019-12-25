@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"net/http"
 	"os"
 	"testing"
 
@@ -84,4 +85,18 @@ func TestMainControlMode(t *testing.T) {
 
 	mode = "oops"
 	assert(t, IsValidMode(&mode), "test invalid mode")
+}
+
+func TestReceiverHeader(t *testing.T) {
+	header := http.Header{}
+	header.Set("Authorization", "Bearer erfagagagag")
+	header.Set("PulsarUrl", "pulsar://mydomain.net:6650")
+	_, _, _, result := ReceiverHeader(&header)
+	assert(t, result, "Test missing TopicFn")
+
+	header.Set("TopicFn", "http://target.net/route")
+	var webhook string
+	_, webhook, _, result = ReceiverHeader(&header)
+	assert(t, !result, "test all headers presence")
+	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
 }
