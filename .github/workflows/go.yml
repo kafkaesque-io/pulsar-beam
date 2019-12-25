@@ -33,11 +33,6 @@ jobs:
           cd src
           golint ./...
 
-      - name: Go Vet
-        run: |
-          cd src
-          go vet ./...
-
   build_test:
     name: Build and Test
     runs-on: ubuntu-latest
@@ -72,10 +67,14 @@ jobs:
           ls ./*apache-pulsar-client*.deb
           sudo apt install ./*apache-pulsar-client*.deb
           go mod download
-      - name: Build Binary Test
+      - name: Build Binary
         run: |
           cd src
           go build ./...
+      - name: Go Vet
+        run: |
+          cd src
+          go vet ./...
       - name: Run Tests
         run: |
           cd src/unit-test
