@@ -110,6 +110,6 @@ jobs:
       - name: Sonar
         uses: sonarsource/sonarcloud-github-action@master
         env:
-          EVENT_ACTION: opened
+          GITHUB_EVENT_NAME: pull_request2
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
