@@ -12,7 +12,7 @@ on:
 
 jobs:
   analysis:
-    name: Static Analysis
+    name: static analysis
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -34,7 +34,7 @@ jobs:
           golint ./...
 
   build_test:
-    name: Build and Test
+    name: build and test
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -90,7 +90,7 @@ jobs:
           GOPATH: /home/runner/work/pulsar-beam/go
 
   sonar:
-    name: Sonar Analysis
+    name: Sonar
     runs-on: ubuntu-latest 
     needs: [analysis]
     steps:
@@ -108,5 +108,6 @@ jobs:
       - name: Sonar
         uses: sonarsource/sonarcloud-github-action@master
         env:
+          EVENT_ACTION: opened
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
