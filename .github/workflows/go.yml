@@ -107,6 +107,9 @@ jobs:
 
       - name: Sonar
         uses: sonarsource/sonarcloud-github-action@master
+        run: |
+          echo $GITHUB_EVENT_NAME
+          echo $GITHUB_EVENT_PATH
         env:
           EVENT_ACTION: opened
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
