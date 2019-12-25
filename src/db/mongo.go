@@ -71,7 +71,8 @@ func (s *MongoDb) Sync() error {
 
 //Health is a Db interface method
 func (s *MongoDb) Health() bool {
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	err := s.client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return false

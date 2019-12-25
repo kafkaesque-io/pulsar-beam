@@ -139,9 +139,6 @@ func ConsumeLoop(url, token, topic, webhookURL string) error {
 			pushAndAck(c, msg, webhookURL, data)
 		}
 	}
-
-	log.Printf("error topic %s consumer loop ended", topic)
-	return nil
 }
 
 func run() {

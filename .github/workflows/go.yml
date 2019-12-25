@@ -1,4 +1,4 @@
-name: Build and test Go
+name: Analyze, build and test Go
 on:
   push:
     branches:
@@ -11,8 +11,8 @@ on:
       - created 
 
 jobs:
-  lint:
-    name: Lint
+  analysis:
+    name: Static Analysis
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -33,8 +33,13 @@ jobs:
           cd src
           golint ./...
 
-  test:
-    name: Test
+      - name: Go Vet
+        run: |
+          cd src
+          go vet ./...
+
+  build_test:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -67,6 +72,10 @@ jobs:
           ls ./*apache-pulsar-client*.deb
           sudo apt install ./*apache-pulsar-client*.deb
           go mod download
+      - name: Build Binary Test
+        run: |
+          cd src
+          go build ./...
       - name: Run Tests
         run: |
           cd src/unit-test
@@ -81,10 +90,10 @@ jobs:
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
 
-  build:
-    name: Build
+  sonar:
+    name: Sonar Analysis
     runs-on: ubuntu-latest 
-    needs: [lint, test]
+    needs: [analysis]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v1
@@ -97,16 +106,8 @@ jobs:
           fetch-depth: 1
           path: go/src/github.com/pulsar-beam
 
-      - name: Build
-        run: |
-          pwd
-          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
-          ls ./*apache-pulsar-client*.deb
-          sudo apt install ./*apache-pulsar-client*.deb
-          go mod download
-          cd src
-          go build ./...
+      - name: Sonar
+        uses: sonarsource/sonarcloud-github-action@master
         env:
-           GOPATH: /home/runner/work/pulsar-beam/go
-
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
