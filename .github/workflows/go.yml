@@ -90,26 +90,3 @@ jobs:
           ./test_coverage.sh
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
-
-  sonar:
-    name: Sonar
-    runs-on: ubuntu-latest 
-    needs: [analysis]
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.13
-
-      - name: Check out code
-        uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
-          path: go/src/github.com/pulsar-beam
-
-      - name: Sonar
-        uses: sonarsource/sonarcloud-github-action@master
-        env:
-          GITHUB_EVENT_NAME: pull_request2
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
