@@ -23,7 +23,7 @@ type MongoDb struct {
 }
 
 var connectionString string = "mongodb://localhost:27017"
-var dbName string = "pulsar"
+var dbName string = "localhost"
 var collectionName string = "topics"
 
 //Init is a Db interface method.

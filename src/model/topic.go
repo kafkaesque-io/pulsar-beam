@@ -20,9 +20,11 @@ const (
 type WebhookConfig struct {
 	URL           string
 	Headers       []string
+	Subscription  string
 	WebhookStatus Status
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	DeletedAt     time.Time
 }
 
 //TODO add state of Webhook replies

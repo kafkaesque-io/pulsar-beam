@@ -40,6 +40,18 @@ func TestMongoDbDriver(t *testing.T) {
 	topic.Token = "eyJhbGciOiJSUzI1NiJ9somecrazytokenstring"
 	topic.PulsarURL = "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
 
+	whCfgs := make([]model.WebhookConfig, 0, 5)
+	wh := model.WebhookConfig{}
+	wh.URL = "http://localhost:8089"
+	wh.Subscription = "firstsubscription"
+	wh.WebhookStatus = model.Activated
+	headers := []string{
+		"Authorization: Bearer anothertoken",
+		"Content-type: application/json",
+	}
+	wh.Headers = headers
+	topic.Webhooks = whCfgs
+
 	_, err = mongodb.Create(&topic)
 	errNil(t, err)
 
@@ -89,7 +101,6 @@ func TestMongoDbDriver(t *testing.T) {
 	resTopic2, err = mongodb2.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), "mongo: no documents in result")
-
 	// TODO: find a place to test Close(); need to find out depedencies.
 	// Comment out because there are other test cases require database.
 	// errNil(t, mongodb.Close())
