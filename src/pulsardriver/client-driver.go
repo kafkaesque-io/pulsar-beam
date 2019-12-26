@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/pulsar-beam/src/db"
 )
 
 // TopicStatus -
@@ -52,8 +53,8 @@ func init() {
 func getTopicDriver(url, tokenStr string) pulsar.Client {
 	key := tokenStr
 	token := pulsar.NewAuthenticationToken(tokenStr)
-	driver := connections[key]
-	if driver != nil {
+	driver, ok := connections[key]
+	if ok {
 		return driver
 	}
 
@@ -78,8 +79,8 @@ func getTopicDriver(url, tokenStr string) pulsar.Client {
 
 func getProducer(url, token, topic string) pulsar.Producer {
 	key := topic
-	p := producers[key]
-	if p != nil {
+	p, ok := producers[key]
+	if ok {
 		return p
 	}
 
@@ -127,7 +128,10 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 
 // GetConsumer gets the matching Pulsar consumer
 func GetConsumer(url, token, topic string) pulsar.Consumer {
-	key := topic
+	key, _ := db.GetKeyFromNames(topic, url)
+	/*if err != nil {
+		return nil, err
+	}*/
 	consumer := consumers[key]
 	if consumer != nil {
 		return consumer
@@ -147,5 +151,21 @@ func GetConsumer(url, token, topic string) pulsar.Consumer {
 		log.Fatal(err)
 		return nil
 	}
+	consumers[key] = consumer
 	return consumer
+}
+
+// CancelConsumer closes consumer
+func CancelConsumer(key string) {
+	c, ok := consumers[key]
+	if ok {
+		err := c.Close()
+		delete(consumers, key)
+		if err != nil {
+			log.Printf("cancel consumer failed %v", err.Error())
+		}
+		log.Println("consumer  close() called")
+	} else {
+		log.Printf("failed to locate consumer key %v", key)
+	}
 }

@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/pulsar-beam/src/db"
 	"github.com/pulsar-beam/src/pulsardriver"
 	"github.com/pulsar-beam/src/util"
 )
@@ -40,6 +42,29 @@ type JSONData struct {
 
 var configs = []ProjectConfig{}
 
+// key is the hash of topic full name and pulsar url
+var webhooks = make(map[string]bool)
+var whLock = sync.RWMutex{}
+
+func readWebhook(key string) bool {
+	whLock.RLock()
+	defer whLock.RUnlock()
+	_, ok := webhooks[key]
+	return ok
+}
+
+func writeWebhook(key string) {
+	whLock.Lock()
+	defer whLock.Unlock()
+	webhooks[key] = true
+}
+
+func deleteWebhook(key string) {
+	whLock.Lock()
+	defer whLock.Unlock()
+	delete(webhooks, key)
+}
+
 // Init initializes webhook configuration database
 func Init() {
 	log.Println("webhook database init...")
@@ -57,7 +82,15 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	go run()
+	go func() {
+		run()
+		for {
+			select {
+			case <-time.Tick(60 * time.Second):
+				run()
+			}
+		}
+	}()
 }
 
 // pushWebhook sends data to a webhook interface
@@ -120,37 +153,66 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
 }
 
 // ConsumeLoop consumes data from Pulsar topic
-func ConsumeLoop(url, token, topic, webhookURL string) error {
+// Do not use context since go vet will puke that requires cancel invoked in the same function
+func ConsumeLoop(url, token, topic, webhookURL, key string) error {
 	c := pulsardriver.GetConsumer(url, token, topic)
 	if c == nil {
 		return errors.New("Failed to create Pulsar consumer")
 	}
 
+	webhooks[key] = true
+	writeWebhook(key)
 	ctx := context.Background()
 
 	// infinite loop to receive messages
+	// TODO receive can starve stop channel if it waits for the next message indefinitely
 	for {
+		var msg pulsar.Message
 		msg, err := c.Receive(ctx)
 		if err != nil {
-			log.Fatal(err)
-		} else {
+			log.Println("error from consumer loop receive")
+			log.Println(err)
+		} else if msg != nil {
 			data := string(msg.Payload())
 			log.Println("Received message : ", data)
 			pushAndAck(c, msg, webhookURL, data)
+		} else {
+			return nil
 		}
 	}
+
 }
 
 func run() {
-	log.Println("start webhook runner")
+	log.Println("load webhooks")
 	for _, cfg := range configs {
 		for _, whCfg := range cfg.Webhooks {
 			topic := cfg.TopicConfig.TopicFN
 			token := cfg.TopicConfig.Token
 			url := cfg.TopicConfig.PulsarURL
 			webhookURL := whCfg.URL
-			go ConsumeLoop(url, token, topic, webhookURL)
+
+			key, _ := db.GetKeyFromNames(cfg.TopicConfig.TopicFN, cfg.TopicConfig.PulsarURL)
+			// add code to check status of webhook to delete / cancel the running webhooks
+			ok := readWebhook(key)
+			if !ok {
+				log.Println("add consumer for topic " + key)
+				go ConsumeLoop(url, token, topic, webhookURL, key)
+			} else {
+				log.Println("already added " + key)
+			}
 		}
 	}
 
+}
+
+func cancelConsumer(key string) error {
+	ok := readWebhook(key)
+	if ok {
+		log.Printf("cancel consumer %v", key)
+		deleteWebhook(key)
+		pulsardriver.CancelConsumer(key)
+		return nil
+	}
+	return errors.New("topic does not exist " + key)
 }

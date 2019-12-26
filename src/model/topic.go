@@ -4,14 +4,16 @@ import (
 	"time"
 )
 
-// Status -
+// Status can be used for webhook status
 type Status int
 
 const (
-	activated Status = iota
-	pending
-	deactivated
-	suspended
+	// Activated is the status for webhook application
+	Activated Status = iota
+	// Deactivated is the status for webhook application
+	Deactivated
+	// Suspended is the status for webhook application
+	Suspended
 )
 
 // WebhookConfig - a configuration for webhook
