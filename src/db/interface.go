@@ -1,9 +1,8 @@
 package db
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"errors"
+	"log"
 
 	"github.com/pulsar-beam/src/model"
 )
@@ -36,13 +35,6 @@ type Db interface {
 	Ops
 }
 
-// GenKey generates a unique key based on pulsar url and topic full name
-func GenKey(topicFullName, pulsarURL string) string {
-	h := sha1.New()
-	h.Write([]byte(topicFullName + pulsarURL))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
 // NewDb is a database factory pattern to create a new database
 func NewDb(reqDbType string) (Db, error) {
 	if dbConn != nil {
@@ -57,4 +49,13 @@ func NewDb(reqDbType string) (Db, error) {
 		err = errors.New("unsupported db type")
 	}
 	return dbConn, err
+}
+
+// NewDbWithPanic ensures a database is returned panic otherwise
+func NewDbWithPanic(reqDbType string) Db {
+	newDb, err := NewDb(reqDbType)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	return newDb
 }

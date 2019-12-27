@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pulsar-beam/src/db"
 	"github.com/pulsar-beam/src/model"
 	. "github.com/pulsar-beam/src/route"
 	"github.com/pulsar-beam/src/util"
@@ -45,7 +44,7 @@ func TestTopicHandler(t *testing.T) {
 	reqJSON, err := json.Marshal(topic)
 	errNil(t, err)
 
-	key, err := db.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
+	key, err := model.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
 	equals(t, key, "0e368637c11795a46066e9adf72598731198493e")
 

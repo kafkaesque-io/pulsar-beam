@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/pulsar-beam/src/model"
@@ -58,8 +56,7 @@ func (s *MongoDb) Init() error {
 		return err
 	}
 
-	log.Println("Collection obtained type:", reflect.TypeOf(s.collection))
-
+	log.Printf("mongo database name %v, collection %v", dbName, collectionName)
 	return nil
 }
 
@@ -116,7 +113,7 @@ func (s *MongoDb) Create(topicCfg *model.TopicConfig) (string, error) {
 
 // GetByTopic gets a document by the topic name and puslar URL
 func (s *MongoDb) GetByTopic(topicFullName, pulsarURL string) (*model.TopicConfig, error) {
-	key, err := GetKeyFromNames(topicFullName, pulsarURL)
+	key, err := model.GetKeyFromNames(topicFullName, pulsarURL)
 	if err != nil {
 		return &model.TopicConfig{}, err
 	}
@@ -208,7 +205,7 @@ func (s *MongoDb) Update(topicCfg *model.TopicConfig) (string, error) {
 
 // Delete deletes a document
 func (s *MongoDb) Delete(topicFullName, pulsarURL string) (string, error) {
-	key, err := GetKeyFromNames(topicFullName, pulsarURL)
+	key, err := model.GetKeyFromNames(topicFullName, pulsarURL)
 	if err != nil {
 		return "", err
 	}
@@ -246,18 +243,5 @@ func exists(key string, coll *mongo.Collection) (bool, error) {
 }
 
 func getKey(topicCfg *model.TopicConfig) (string, error) {
-	return GetKeyFromNames(topicCfg.TopicFullName, topicCfg.PulsarURL)
-}
-
-// GetKeyFromNames generate topic key based on topic full name and pulsar url
-func GetKeyFromNames(name, url string) (string, error) {
-	if url == "" || name == "" {
-		return "", errors.New("missing PulsarURL or TopicFullName")
-	}
-
-	urlParts := strings.Split(url, ":")
-	if len(urlParts) < 3 {
-		return "", errors.New("incorrect pulsar url format")
-	}
-	return GenKey(name, url), nil
+	return model.GetKeyFromNames(topicCfg.TopicFullName, topicCfg.PulsarURL)
 }

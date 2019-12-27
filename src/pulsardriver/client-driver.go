@@ -4,40 +4,9 @@ import (
 	"context"
 	"errors"
 	"log"
-	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
-	"github.com/pulsar-beam/src/db"
 )
-
-// TopicStatus -
-type TopicStatus int
-
-const (
-	activated TopicStatus = iota
-	pending
-	deactivated
-	suspended
-)
-
-// TopicConfig -
-type TopicConfig struct {
-	TopicFN   string
-	Token     string
-	Tenant    string
-	Status    TopicStatus
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-// TopicConfig2 is a simplified configuration for prototype.
-// Assumptions are made with no token verification for subsquent connections
-// No status support.
-type TopicConfig2 struct {
-	TopicFN   string
-	Token     string
-	PulsarURL string
-}
 
 var connections = make(map[string]pulsar.Client)
 var producers = make(map[string]pulsar.Producer)
@@ -64,7 +33,8 @@ func getTopicDriver(url, tokenStr string) pulsar.Client {
 		Authentication:          token,
 		TLSTrustCertsFilePath:   trustStore,
 		IOThreads:               3,
-		OperationTimeoutSeconds: 5,
+		OperationTimeoutSeconds: 30,
+		StatsIntervalInSeconds:  300,
 	})
 
 	if err != nil {
@@ -127,11 +97,8 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 }
 
 // GetConsumer gets the matching Pulsar consumer
-func GetConsumer(url, token, topic string) pulsar.Consumer {
-	key, _ := db.GetKeyFromNames(topic, url)
-	/*if err != nil {
-		return nil, err
-	}*/
+func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
+	key := subscription
 	consumer := consumers[key]
 	if consumer != nil {
 		return consumer
@@ -145,7 +112,7 @@ func GetConsumer(url, token, topic string) pulsar.Consumer {
 	var err error
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
 		Topic:            topic,
-		SubscriptionName: "my-subscription",
+		SubscriptionName: subscription,
 	})
 	if err != nil {
 		log.Fatal(err)
