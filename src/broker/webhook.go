@@ -58,8 +58,7 @@ var singleDb db.Db
 
 // Init initializes webhook configuration database
 func Init() {
-	log.Println("webhook database init...")
-	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
+	NewDbHandler()
 
 	go func() {
 		run()
@@ -70,6 +69,12 @@ func Init() {
 			}
 		}
 	}()
+}
+
+// NewDbHandler gets a local copy of Db handler
+func NewDbHandler() {
+	log.Println("webhook database init...")
+	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
 }
 
 // pushWebhook sends data to a webhook interface
@@ -173,16 +178,16 @@ func run() {
 			webhookURL := whCfg.URL
 			// ensure random subscription name
 			subscription := util.AssignString(whCfg.Subscription, icrypto.GenTopicKey())
-			status := cfg.TopicStatus
+			status := whCfg.WebhookStatus
 			ok := ReadWebhook(subscription)
 			if !ok && status == model.Activated {
 				log.Println("add activated webhook for topic " + subscription)
 				go ConsumeLoop(url, token, topic, webhookURL, subscription)
 			} else if ok && status != model.Activated {
+				log.Printf("cancel webhook consumer subscription %v", subscription)
 				cancelConsumer(subscription)
-			} else {
-				log.Println("already added " + subscription)
 			}
+			// TODO implement a delete list because we do not scan for already removed webhooks
 		}
 	}
 }
@@ -194,7 +199,6 @@ func LoadConfig() []*model.TopicConfig {
 		log.Printf("failed to load topics from database error %v", err.Error())
 	}
 
-	log.Println(cfgs)
 	return cfgs
 }
 

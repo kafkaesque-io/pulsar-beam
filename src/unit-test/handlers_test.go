@@ -33,6 +33,7 @@ func TestTopicHandler(t *testing.T) {
 	os.Setenv("PULSAR_BEAM_CONFIG", "../../config/pulsar_beam.json")
 	os.Setenv("PulsarPublicKey", "./example_private_key")
 	os.Setenv("PulsarPrivateKey", "./example_public_key.pub")
+	os.Setenv("CLUSTER", "unittest")
 	util.Init()
 	Init()
 

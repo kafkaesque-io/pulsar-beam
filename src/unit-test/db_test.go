@@ -2,8 +2,10 @@ package tests
 
 import (
 	"log"
+	"os"
 	"testing"
 
+	"github.com/pulsar-beam/src/broker"
 	. "github.com/pulsar-beam/src/db"
 	"github.com/pulsar-beam/src/model"
 )
@@ -15,6 +17,8 @@ func TestUnsupportedDbDriver(t *testing.T) {
 	equals(t, err.Error(), "unsupported db type")
 }
 func TestMongoDbDriver(t *testing.T) {
+	os.Setenv("CLUSTER", "unittest")
+
 	// a test case 1) connect to a local mongodb
 	// 2) test with ping
 	// 3) create a document
@@ -78,7 +82,6 @@ func TestMongoDbDriver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(res)
 	found := false
 	for _, v := range res {
 		if v.Key == key {
@@ -86,6 +89,11 @@ func TestMongoDbDriver(t *testing.T) {
 		}
 	}
 	equals(t, found, true)
+
+	// test webhook database load()
+	broker.NewDbHandler()
+	topics := broker.LoadConfig()
+	equals(t, len(res), len(topics))
 
 	resTopic, err := mongodb.GetByTopic(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
