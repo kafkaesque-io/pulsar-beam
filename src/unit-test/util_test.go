@@ -3,9 +3,11 @@ package tests
 import (
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 
-	"github.com/pulsar-beam/src/db"
+	"github.com/pulsar-beam/src/broker"
+	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/route"
 	. "github.com/pulsar-beam/src/util"
 )
@@ -26,11 +28,11 @@ func TestUUID(t *testing.T) {
 func TestDbKeyGeneration(t *testing.T) {
 	topicFullName := "persistent://my-topic/local-useast1-gcp/cloudfunction-funnel"
 	pulsarURL := "pulsar+ssl://useast3.aws.host.io:6651"
-	first := db.GenKey(topicFullName, pulsarURL)
+	first := model.GenKey(topicFullName, pulsarURL)
 
-	assert(t, first == db.GenKey(topicFullName, pulsarURL), "same key generates same hash")
-	assert(t, first != db.GenKey(topicFullName, "pulsar://useast3.aws.host.io:6650"), "different key generates different hash")
-	assert(t, first != db.GenKey("persistent://my-topic/local-useast1-gcp/cloudfunction-funnel-a", pulsarURL), "different key generates different hash")
+	assert(t, first == model.GenKey(topicFullName, pulsarURL), "same key generates same hash")
+	assert(t, first != model.GenKey(topicFullName, "pulsar://useast3.aws.host.io:6650"), "different key generates different hash")
+	assert(t, first != model.GenKey("persistent://my-topic/local-useast1-gcp/cloudfunction-funnel-a", pulsarURL), "different key generates different hash")
 }
 
 func TestJoinString(t *testing.T) {
@@ -99,4 +101,31 @@ func TestReceiverHeader(t *testing.T) {
 	_, webhook, _, result = ReceiverHeader(&header)
 	assert(t, !result, "test all headers presence")
 	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
+}
+
+func TestThreaSafeMap(t *testing.T) {
+	// TODO add more goroutine to test concurrency
+	equals(t, false, broker.ReadWebhook("first"))
+	broker.WriteWebhook("first")
+	equals(t, true, broker.ReadWebhook("first"))
+	broker.DeleteWebhook("first")
+	equals(t, false, broker.ReadWebhook("first"))
+	go func() {
+		for i := 0; i < 1000; i++ {
+			broker.WriteWebhook("key" + strconv.Itoa(i))
+			broker.WriteWebhook("first")
+		}
+	}()
+	go func() {
+		for i := 0; i < 1000; i++ {
+			broker.ReadWebhook("key" + strconv.Itoa(i))
+			broker.ReadWebhook("first")
+		}
+	}()
+	go func() {
+		for i := 0; i < 1000; i++ {
+			broker.DeleteWebhook("key" + strconv.Itoa(i))
+			broker.WriteWebhook("first" + strconv.Itoa(i))
+		}
+	}()
 }

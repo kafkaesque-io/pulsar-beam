@@ -89,7 +89,8 @@ func (keys *RSAKeyPair) VerifyTokenSubject(tokenStr, subject string) (bool, erro
 	return false, errors.New("incorrect sub")
 }
 
-func (keys *RSAKeyPair) getTokenRemainingValidity(timestamp interface{}) int {
+// GetTokenRemainingValidity is the remaining seconds before token expires
+func (keys *RSAKeyPair) GetTokenRemainingValidity(timestamp interface{}) int {
 	if validity, ok := timestamp.(float64); ok {
 		tm := time.Unix(int64(validity), 0)
 		remainer := tm.Sub(time.Now())

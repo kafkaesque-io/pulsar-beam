@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+# Run unit test and generate test coverage report 
+#
+
 # absolute directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -8,8 +12,11 @@ ALL_PKGS=""
 
 cd $DIR/../src
 for d in */ ; do
-    pkg=${d%/}
-    ALL_PKGS=${ALL_PKGS}","${BASE_PKG_DIR}${pkg}
+    if [ ${d} != "unit-test/" ] # exclude unit-test for test coverage
+    then
+        pkg=${d%/}
+        ALL_PKGS=${ALL_PKGS}","${BASE_PKG_DIR}${pkg}
+    fi
 done
 
 ALL_PKGS=$(echo $ALL_PKGS | sed 's/^,//')

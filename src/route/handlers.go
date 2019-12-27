@@ -19,11 +19,7 @@ var singleDb db.Db
 
 // Init initializes database
 func Init() {
-	var err error
-	singleDb, err = db.NewDb(util.GetConfig().PbDbType)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
 }
 
 // StatusPage replies with basic status code
@@ -157,7 +153,7 @@ func getTopicKey(r *http.Request) (string, error) {
 		case err != nil:
 			return "", err
 		}
-		topicKey, err = db.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
+		topicKey, err = model.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
 		if err != nil {
 			return "", err
 		}

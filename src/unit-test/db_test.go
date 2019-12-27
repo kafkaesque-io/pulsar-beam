@@ -2,8 +2,10 @@ package tests
 
 import (
 	"log"
+	"os"
 	"testing"
 
+	"github.com/pulsar-beam/src/broker"
 	. "github.com/pulsar-beam/src/db"
 	"github.com/pulsar-beam/src/model"
 )
@@ -15,6 +17,8 @@ func TestUnsupportedDbDriver(t *testing.T) {
 	equals(t, err.Error(), "unsupported db type")
 }
 func TestMongoDbDriver(t *testing.T) {
+	os.Setenv("CLUSTER", "unittest")
+
 	// a test case 1) connect to a local mongodb
 	// 2) test with ping
 	// 3) create a document
@@ -23,6 +27,7 @@ func TestMongoDbDriver(t *testing.T) {
 	// 6) load/retreive all documents, iterate to find a document
 	// 7) delete a document
 	// 8) get a document to ensure it's deleted
+	NewDbWithPanic(dbTarget)
 	mongodb, err := NewDb(dbTarget)
 	errNil(t, err)
 
@@ -35,22 +40,32 @@ func TestMongoDbDriver(t *testing.T) {
 	errNil(t, err)
 	equals(t, 0, len(docs))
 
-	topic := model.TopicConfig{}
-	topic.TopicFullName = "persistent://mytenant/local-useast1-gcp/yet-another-test-topic"
-	topic.Token = "eyJhbGciOiJSUzI1NiJ9somecrazytokenstring"
-	topic.PulsarURL = "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
+	topicFullName := "persistent://mytenant/local-useast1-gcp/yet-another-test-topic"
+	token := "eyJhbGciOiJSUzI1NiJ9somecrazytokenstring"
+	pulsarURL := "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
 
-	whCfgs := make([]model.WebhookConfig, 0, 5)
-	wh := model.WebhookConfig{}
-	wh.URL = "http://localhost:8089"
+	// test incorrect arity order
+	topic, err := model.NewTopicConfig(pulsarURL, topicFullName, token)
+	equals(t, err != nil, true)
+
+	// test correct arity for topic
+	topic, err = model.NewTopicConfig(topicFullName, pulsarURL, token)
+	errNil(t, err)
+
+	wh := model.NewWebhookConfig("http://localhost:8089")
+	equals(t, wh.URL, "http://localhost:8089")
+	equals(t, len(wh.Subscription), 24)
 	wh.Subscription = "firstsubscription"
-	wh.WebhookStatus = model.Activated
+	equals(t, wh.Subscription, "firstsubscription")
+	equals(t, wh.WebhookStatus, model.Activated)
 	headers := []string{
 		"Authorization: Bearer anothertoken",
 		"Content-type: application/json",
 	}
 	wh.Headers = headers
-	topic.Webhooks = whCfgs
+	topic.Webhooks = append(topic.Webhooks, wh)
+	equals(t, len(topic.Webhooks), 1)
+	equals(t, cap(topic.Webhooks), 10)
 
 	_, err = mongodb.Create(&topic)
 	errNil(t, err)
@@ -67,7 +82,6 @@ func TestMongoDbDriver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(res)
 	found := false
 	for _, v := range res {
 		if v.Key == key {
@@ -75,6 +89,11 @@ func TestMongoDbDriver(t *testing.T) {
 		}
 	}
 	equals(t, found, true)
+
+	// test webhook database load()
+	broker.NewDbHandler()
+	topics := broker.LoadConfig()
+	equals(t, len(res), len(topics))
 
 	resTopic, err := mongodb.GetByTopic(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)

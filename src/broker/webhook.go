@@ -7,14 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pulsar-beam/src/db"
+	"github.com/pulsar-beam/src/icrypto"
+	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/pulsardriver"
 	"github.com/pulsar-beam/src/util"
 )
@@ -23,74 +23,58 @@ import (
 // Definitely definitely we need a database to store the webhook configuration
 // This is a prototype only.
 
-// WebhookConfig - a configuration for webhook
-type WebhookConfig struct {
-	URL     string
-	Headers []string
-}
-
-// ProjectConfig - a configuration for Webhook project
-type ProjectConfig struct {
-	Webhooks    []WebhookConfig // support multiple webhooks
-	TopicConfig pulsardriver.TopicConfig2
-}
-
 // JSONData is the request body to the webhook interface
 type JSONData struct {
 	Data string
 }
 
-var configs = []ProjectConfig{}
-
 // key is the hash of topic full name and pulsar url
 var webhooks = make(map[string]bool)
 var whLock = sync.RWMutex{}
 
-func readWebhook(key string) bool {
+// ReadWebhook reads a thread safe map
+func ReadWebhook(key string) bool {
 	whLock.RLock()
 	defer whLock.RUnlock()
 	_, ok := webhooks[key]
 	return ok
 }
 
-func writeWebhook(key string) {
+// WriteWebhook writes a key/value to a thread safe map
+func WriteWebhook(key string) {
 	whLock.Lock()
 	defer whLock.Unlock()
 	webhooks[key] = true
 }
 
-func deleteWebhook(key string) {
+// DeleteWebhook deletes a key from a thread safe map
+func DeleteWebhook(key string) {
 	whLock.Lock()
 	defer whLock.Unlock()
 	delete(webhooks, key)
 }
 
+var singleDb db.Db
+
 // Init initializes webhook configuration database
 func Init() {
-	log.Println("webhook database init...")
-	// initialize configuration database
-	// TODO: this is for prototype only. An official database will be introduced very soon.
-	absFilePath, _ := filepath.Abs("../config/prototype-db/default.json")
-	file, err := os.Open(absFilePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&configs)
-	if err != nil {
-		log.Fatal(err)
-	}
+	NewDbHandler()
 
 	go func() {
 		run()
 		for {
 			select {
-			case <-time.Tick(60 * time.Second):
+			case <-time.Tick(180 * time.Second):
 				run()
 			}
 		}
 	}()
+}
+
+// NewDbHandler gets a local copy of Db handler
+func NewDbHandler() {
+	log.Println("webhook database init...")
+	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
 }
 
 // pushWebhook sends data to a webhook interface
@@ -121,6 +105,7 @@ func pushWebhook(url, data string) (int, *http.Response) {
 func toPulsar(r *http.Response) {
 	token, topicFN, pulsarURL, err := util.ReceiverHeader(&r.Header)
 	if err {
+		log.Printf("error missing required topic headers from webhook/function")
 		return
 	}
 	log.Printf("token %s topicURL %s puslarURL %s", token, topicFN, pulsarURL)
@@ -154,14 +139,14 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
 
 // ConsumeLoop consumes data from Pulsar topic
 // Do not use context since go vet will puke that requires cancel invoked in the same function
-func ConsumeLoop(url, token, topic, webhookURL, key string) error {
-	c := pulsardriver.GetConsumer(url, token, topic)
+func ConsumeLoop(url, token, topic, webhookURL, subscription string) error {
+	c := pulsardriver.GetConsumer(url, token, topic, subscription)
 	if c == nil {
 		return errors.New("Failed to create Pulsar consumer")
 	}
 
-	webhooks[key] = true
-	writeWebhook(key)
+	webhooks[subscription] = true
+	WriteWebhook(subscription)
 	ctx := context.Background()
 
 	// infinite loop to receive messages
@@ -185,33 +170,44 @@ func ConsumeLoop(url, token, topic, webhookURL, key string) error {
 
 func run() {
 	log.Println("load webhooks")
-	for _, cfg := range configs {
+	for _, cfg := range LoadConfig() {
 		for _, whCfg := range cfg.Webhooks {
-			topic := cfg.TopicConfig.TopicFN
-			token := cfg.TopicConfig.Token
-			url := cfg.TopicConfig.PulsarURL
+			topic := cfg.TopicFullName
+			token := cfg.Token
+			url := cfg.PulsarURL
 			webhookURL := whCfg.URL
-
-			key, _ := db.GetKeyFromNames(cfg.TopicConfig.TopicFN, cfg.TopicConfig.PulsarURL)
-			// add code to check status of webhook to delete / cancel the running webhooks
-			ok := readWebhook(key)
-			if !ok {
-				log.Println("add consumer for topic " + key)
-				go ConsumeLoop(url, token, topic, webhookURL, key)
-			} else {
-				log.Println("already added " + key)
+			// ensure random subscription name
+			subscription := util.AssignString(whCfg.Subscription, icrypto.GenTopicKey())
+			status := whCfg.WebhookStatus
+			ok := ReadWebhook(subscription)
+			if !ok && status == model.Activated {
+				log.Println("add activated webhook for topic " + subscription)
+				go ConsumeLoop(url, token, topic, webhookURL, subscription)
+			} else if ok && status != model.Activated {
+				log.Printf("cancel webhook consumer subscription %v", subscription)
+				cancelConsumer(subscription)
 			}
+			// TODO implement a delete list because we do not scan for already removed webhooks
 		}
 	}
+}
 
+// LoadConfig loads the entire topic documents from the database
+func LoadConfig() []*model.TopicConfig {
+	cfgs, err := singleDb.Load()
+	if err != nil {
+		log.Printf("failed to load topics from database error %v", err.Error())
+	}
+
+	return cfgs
 }
 
 func cancelConsumer(key string) error {
-	ok := readWebhook(key)
+	ok := ReadWebhook(key)
 	if ok {
 		log.Printf("cancel consumer %v", key)
-		deleteWebhook(key)
 		pulsardriver.CancelConsumer(key)
+		DeleteWebhook(key)
 		return nil
 	}
 	return errors.New("topic does not exist " + key)

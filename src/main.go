@@ -15,7 +15,6 @@ var mode = flag.String("mode", "hybrid", "server running mode")
 
 func main() {
 	util.Init()
-	route.Init()
 
 	flag.Parse()
 	log.Println("start server mode ", *mode)
@@ -27,6 +26,7 @@ func main() {
 		broker.Init()
 	}
 	if util.IsHTTPRouterRequired(mode) {
+		route.Init()
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8080"},
