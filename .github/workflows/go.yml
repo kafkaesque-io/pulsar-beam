@@ -105,3 +105,19 @@ jobs:
         run: |
           pwd
           sudo docker build -t pulsar-beam .
+      - name: Install dependencies
+        run: |
+          pwd
+          echo ${HOME}
+          echo ${GITHUB_WORKSPACE}
+          echo ${GOPATH}
+          echo ${GOROOT}
+          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
+          wget --user-agent=Mozilla "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
+          ls ./*apache-pulsar-client*.deb
+          sudo apt install ./*apache-pulsar-client*.deb
+          go mod download
+      - name: Build e2e test tool
+        run: |
+          cd src/e2e
+          go build -o ./e2etest ./e2etest.go

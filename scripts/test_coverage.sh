@@ -12,7 +12,7 @@ ALL_PKGS=""
 
 cd $DIR/../src
 for d in */ ; do
-    if [ ${d} != "unit-test/" ] # exclude unit-test for test coverage
+    if [[ ${d} != "unit-test/" && ${d} != "e2e/" ]] # exclude unit-test for test coverage
     then
         pkg=${d%/}
         ALL_PKGS=${ALL_PKGS}","${BASE_PKG_DIR}${pkg}
