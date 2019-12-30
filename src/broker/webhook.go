@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -60,7 +59,7 @@ var singleDb db.Db
 // Init initializes webhook configuration database
 func Init() {
 	NewDbHandler()
-	durationStr := util.AssignString(os.Getenv("PbDbInterval"), "180s")
+	durationStr := util.AssignString(util.GetConfig().PbDbInterval, "180s")
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
 		log.Panic(err)

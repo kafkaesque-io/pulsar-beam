@@ -130,9 +130,8 @@ jobs:
       - name: Start Docker
         run: |
           pwd
-          ls /etc/pki/ca-trust/extracted/pem/
-          ls /etc/ssl/certs/
           ls
+          ls /etc/ssl/certs
       - name: Build e2e test tool
         run: |
           cd src/e2e
