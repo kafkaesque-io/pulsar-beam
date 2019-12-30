@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/pulsar-beam/src/db"
@@ -16,10 +17,13 @@ import (
 )
 
 var singleDb db.Db
+var superRoles []string
 
 // Init initializes database
 func Init() {
 	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
+	superRoleStr := util.AssignString(util.GetConfig().SuperRoles, "superuser")
+	superRoles = strings.Split(superRoleStr, ",")
 }
 
 // StatusPage replies with basic status code
@@ -69,6 +73,11 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
+	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	resJSON, err := json.Marshal(doc)
 	if err != nil {
 		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
@@ -88,6 +97,11 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&doc)
 	if err != nil {
 		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+
+	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
@@ -120,12 +134,23 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doc, err := singleDb.DeleteByKey(topicKey)
+	doc, err := singleDb.GetByKey(topicKey)
+	if err != nil {
+		log.Println(err)
+		util.ResponseErrorJSON(err, w, http.StatusNotFound)
+		return
+	}
+	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	deletedKey, err := singleDb.DeleteByKey(topicKey)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	resJSON, err := json.Marshal(doc)
+	resJSON, err := json.Marshal(deletedKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -133,8 +158,6 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(resJSON)
 	}
-	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func getTopicKey(r *http.Request) (string, error) {
@@ -159,4 +182,25 @@ func getTopicKey(r *http.Request) (string, error) {
 		}
 	}
 	return topicKey, err
+}
+
+// VerifySubject verifies the subject can meet the requirement.
+func VerifySubject(topicFN, tokenSub string) bool {
+	parts := strings.Split(topicFN, "/")
+	if len(parts) < 3 {
+		return false
+	}
+	tenant := parts[2]
+	log.Printf(" tenant %s token sub %s", tenant, tokenSub)
+	if len(tenant) < 1 {
+		return false
+	}
+	subjects := append(superRoles, tenant)
+
+	for _, elem := range subjects {
+		if tokenSub == elem {
+			return true
+		}
+	}
+	return false
 }

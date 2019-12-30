@@ -21,14 +21,14 @@ var Rate = NewSema(200)
 func AuthVerifyJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenStr := strings.TrimSpace(strings.Replace(r.Header.Get("Authorization"), "Bearer", "", 1))
-		_, err := util.JWTAuth.DecodeToken(tokenStr)
+		subjects, err := util.JWTAuth.GetTokenSubject(tokenStr)
 
-		// key := r.Header.Get("apikey")
 		if err == nil {
 			log.Println("Authenticated")
+			r.Header.Set("injectedSubs", subjects)
 			next.ServeHTTP(w, r)
 		} else {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		}
 
 	})
@@ -42,7 +42,7 @@ func AuthHeaderRequired(next http.Handler) http.Handler {
 		if len(tokenStr) > 1 {
 			next.ServeHTTP(w, r)
 		} else {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		}
 
 	})

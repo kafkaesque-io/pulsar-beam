@@ -108,6 +108,10 @@ func TestJWTRSASignAndVerify(t *testing.T) {
 	valid, _ = authen.VerifyTokenSubject(pulsarGeneratedToken, "picasso")
 	assert(t, valid, "validate pulsar generated token and subject")
 
+	subjects, err := authen.GetTokenSubject(pulsarGeneratedToken)
+	errNil(t, err)
+	equals(t, subjects, "picasso")
+
 	t2 := time.Now().Add(time.Hour * 1)
 	expireOffset := authen.GetTokenRemainingValidity(t2)
 	equals(t, expireOffset, 3600)
