@@ -185,7 +185,11 @@ func main() {
 	key := addWebhookToDb()
 	log.Println(key)
 	produceMessage()
+
+	// timeout to fail the test case if no message received
+	time.AfterFunc(181*time.Second, func() {
+		os.Exit(2)
+	})
 	consumeToVerify()
-	time.Sleep(1 * time.Second)
 	deleteWebhook(key)
 }
