@@ -72,6 +72,22 @@ func (keys *RSAKeyPair) DecodeToken(tokenStr string) (*jwt.Token, error) {
 	return nil, errors.New("invalid token")
 }
 
+//TODO: support multiple subjects in claims
+
+// GetTokenSubject gets the subjects from a token
+func (keys *RSAKeyPair) GetTokenSubject(tokenStr string) (string, error) {
+	token, err := keys.DecodeToken(tokenStr)
+	if err != nil {
+		return "", err
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	subjects, ok := claims["sub"]
+	if ok {
+		return subjects.(string), nil
+	}
+	return "", errors.New("missing subjects")
+}
+
 // VerifyTokenSubject verifies a token string based on required matching subject
 func (keys *RSAKeyPair) VerifyTokenSubject(tokenStr, subject string) (bool, error) {
 	token, err := keys.DecodeToken(tokenStr)
