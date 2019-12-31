@@ -117,6 +117,21 @@ jobs:
           ls ./*apache-pulsar-client*.deb
           sudo apt install ./*apache-pulsar-client*.deb
           go mod download
+      - name: Install MongoDB
+        run: |
+          echo $GITHUB_EVENT_NAME
+          echo $GITHUB_EVENT_PATH
+          sudo apt-get update
+          sudo apt-get install -y mongodb
+      - name: Verify MongoDB Installation and Status
+        run: |
+          ls /var/lib/mongodb
+          sudo systemctl status mongodb
+      - name: Start Docker
+        run: |
+          pwd
+          ls
+          ls /etc/ssl/certs
       - name: Build e2e test tool
         run: |
           cd src/e2e

@@ -81,5 +81,5 @@ $ sudo docker build -t pulsar-beam .
 This is an example of file based user Pulsar topic configurations.
 
 ```
-$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -v /home/ming/go/src/github.com/pulsar-beam/config:/root/config -p 8080:8080 --name=pbeam-server pulsar-beam
+$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -v /home/ming/go/src/github.com/pulsar-beam/config:/root/config -p 3000:3000 --name=pbeam-server pulsar-beam
 ```

@@ -24,6 +24,7 @@ type Configuration struct {
 	PulsarPublicKey  string `json:"PulsarPublicKey"`
 	PulsarPrivateKey string `json:"PulsarPrivateKey"`
 	SuperRoles       string `json:"SuperRoles"`
+	PbDbInterval     string `json:"PbDbInterval"`
 }
 
 // Config - this server's configuration instance

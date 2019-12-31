@@ -59,12 +59,18 @@ var singleDb db.Db
 // Init initializes webhook configuration database
 func Init() {
 	NewDbHandler()
+	durationStr := util.AssignString(util.GetConfig().PbDbInterval, "180s")
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Printf("beam database pull every %.0f seconds", duration.Seconds())
 
 	go func() {
 		run()
 		for {
 			select {
-			case <-time.Tick(180 * time.Second):
+			case <-time.Tick(duration):
 				run()
 			}
 		}
