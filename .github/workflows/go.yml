@@ -91,8 +91,9 @@ jobs:
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
 
-  sonar:
-    name: docker
+  e2e_test:
+    name: e2e_test
+    needs: [analysis, build_test]
     runs-on: ubuntu-latest 
     steps:
       - name: Check out code
@@ -101,10 +102,6 @@ jobs:
           fetch-depth: 1
           path: go/src/github.com/pulsar-beam
 
-      - name: Build Docker Image
-        run: |
-          pwd
-          sudo docker build -t pulsar-beam .
       - name: Install dependencies
         run: |
           pwd
@@ -127,12 +124,43 @@ jobs:
         run: |
           ls /var/lib/mongodb
           sudo systemctl status mongodb
-      - name: Start Docker
+      - name: Set up root certificate
+        env:
+          PULSAR_CLIENT_CERT: ${{ secrets.PULSAR_CLIENT_CERT }}
         run: |
+          sudo mkdir -p /etc/ssl/certs/
+          echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > /etc/ssl/certs/ca-bundle.crt
+      - name: Start daemon
+        env:
+          PbDbInterval: 60s
+        run: |
+          ls /etc/ssl/certs/ca-bundle.crt
           pwd
-          ls
-          ls /etc/ssl/certs
+          cd src
+          go run ./main.go &
       - name: Build e2e test tool
+        env:
+          FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
+          PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
+          PULSAR_URI: ${{ secrets.PULSAR_URI }}
+          REST_API_TOKEN: ${{ secrets.REST_API_TOKEN }}
+          WEBHOOK2_URL: ${{ secrets.WEBHOOK2_URL }}
+          WEBHOOK_TOPIC: ${{ secrets.WEBHOOK_TOPIC }}
         run: |
           cd src/e2e
-          go build -o ./e2etest ./e2etest.go
+          go run ./e2etest.go
+
+  docker:
+    name: docker
+    runs-on: ubuntu-latest 
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
+
+      - name: Build Docker Image
+        run: |
+          pwd
+          sudo docker build -t pulsar-beam .

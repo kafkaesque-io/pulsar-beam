@@ -20,11 +20,13 @@ type Configuration struct {
 	User             string `json:"User"`
 	Pass             string `json:"Pass"`
 	DbName           string `json:"DbName"`
+	DbConnectionStr  string `json:"DbConnectionStr"`
 	PbDbType         string `json:"PbDbType"`
 	PulsarPublicKey  string `json:"PulsarPublicKey"`
 	PulsarPrivateKey string `json:"PulsarPrivateKey"`
 	SuperRoles       string `json:"SuperRoles"`
 	PbDbInterval     string `json:"PbDbInterval"`
+	TrustStore       string `json:"TrustStore"`
 }
 
 // Config - this server's configuration instance

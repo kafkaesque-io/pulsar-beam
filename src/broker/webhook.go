@@ -114,7 +114,7 @@ func toPulsar(r *http.Response) {
 		log.Printf("error missing required topic headers from webhook/function")
 		return
 	}
-	log.Printf("token %s topicURL %s puslarURL %s", token, topicFN, pulsarURL)
+	log.Printf("topicURL %s puslarURL %s", topicFN, pulsarURL)
 
 	b, err2 := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()

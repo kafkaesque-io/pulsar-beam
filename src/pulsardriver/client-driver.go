@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/pulsar-beam/src/util"
 )
 
 var connections = make(map[string]pulsar.Client)
@@ -16,7 +17,7 @@ var trustStore string
 
 func init() {
 	// TODO: add code to tell CentOS or Ubuntu
-	trustStore = "/etc/ssl/certs/ca-bundle.crt"
+	trustStore = util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
 }
 
 func getTopicDriver(url, tokenStr string) pulsar.Client {

@@ -27,6 +27,8 @@ var collectionName string = "topics"
 //Init is a Db interface method.
 func (s *MongoDb) Init() error {
 	dbName = util.AssignString(util.Config.CLUSTER, dbName)
+	connectionString = util.AssignString(util.Config.DbConnectionStr, connectionString)
+	log.Printf("connecting to %s", connectionString)
 	var err error
 	clientOptions := options.Client().ApplyURI(connectionString)
 	// ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
