@@ -129,12 +129,12 @@ jobs:
           PULSAR_CLIENT_CERT: ${{ secrets.PULSAR_CLIENT_CERT }}
         run: |
           sudo mkdir -p /etc/ssl/certs/
-          echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > /etc/ssl/certs/ca-bundle.crt
+          sudo echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > /etc/ssl/certs/ca-bundle.crt
       - name: Start daemon
         env:
           PbDbInterval: 60s
         run: |
-          ls /etc/ssl/certs/ca-bundle.crt
+          ls -l /etc/ssl/certs/ca-bundle.crt
           pwd
           cd src
           go run ./main.go &
