@@ -150,17 +150,19 @@ jobs:
           ls -l /etc/ssl/certs/ca-certificates.crt
           pwd
           cd src
-          go run ./main.go > /tmp/beam.log &
+          go run ./main.go > ./beam.log &
+          date
           sleep 15
+          date
+          ls ./beam.log
           ps -eaf | grep "main.go"
-          ps -eaf | grep go
           cd e2e
           pwd
-          cat /tmp/beam.log
+          cat ../beam.log
           curl -v -H "Authorization: testkey" http://localhost:3000/status
-          cat /tmp/beam.log
+          cat ../beam.log
           go run ./e2etest.go
-          cat /tmp/beam.log
+          cat ../beam.log
 
   docker:
     name: docker
