@@ -140,13 +140,6 @@ jobs:
         env:
           PbDbInterval: 60s
           TrustStore: /etc/ssl/certs/ca-certificates.crt
-        run: |
-          ls -l /etc/ssl/certs/ca-certificates.crt
-          pwd
-          cd src
-          go run ./main.go &
-      - name: Build e2e test tool
-        env:
           FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
           PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
           PULSAR_URI: ${{ secrets.PULSAR_URI }}
@@ -154,7 +147,14 @@ jobs:
           WEBHOOK2_URL: ${{ secrets.WEBHOOK2_URL }}
           WEBHOOK_TOPIC: ${{ secrets.WEBHOOK_TOPIC }}
         run: |
-          cd src/e2e
+          ls -l /etc/ssl/certs/ca-certificates.crt
+          pwd
+          cd src
+          go run ./main.go &
+          ps -eaf | grep "main.go"
+          ps -eaf | grep go
+          cd e2e
+          pwd
           go run ./e2etest.go
 
   docker:
