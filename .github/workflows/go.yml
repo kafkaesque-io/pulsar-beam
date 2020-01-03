@@ -128,13 +128,18 @@ jobs:
         env:
           PULSAR_CLIENT_CERT: ${{ secrets.PULSAR_CLIENT_CERT }}
         run: |
-          sudo mkdir -p /etc/ssl/certs/
-          sudo echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > /etc/ssl/certs/ca-bundle.crt
+          pwd
+          sudo apt-get install ca-certificates -y
+          sudo echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > /usr/local/share/ca-certificate/pulsar-ca.crt
+          ls /usr/local/share/ca-certificate
+          sudo update-ca-certificates
+          ls /etc/ssl/certs
       - name: Start daemon
         env:
           PbDbInterval: 60s
+          TrustStore: /etc/ssl/certs/ca-certificates.crt
         run: |
-          ls -l /etc/ssl/certs/ca-bundle.crt
+          ls -l /etc/ssl/certs/ca-certificates.crt
           pwd
           cd src
           go run ./main.go &
