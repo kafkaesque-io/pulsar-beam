@@ -150,12 +150,16 @@ jobs:
           ls -l /etc/ssl/certs/ca-certificates.crt
           pwd
           cd src
-          go run ./main.go
+          go run ./main.go > tee /tmp/stdout &
           ps -eaf | grep "main.go"
           ps -eaf | grep go
           cd e2e
           pwd
+          cat /tmp/stdout
+          curl -v -H "Authorization: testkey" http://localhost:3000/status
+          cat /tmp/stdout
           go run ./e2etest.go
+          cat /tmp/stdout
 
   docker:
     name: docker
