@@ -151,6 +151,7 @@ jobs:
           pwd
           cd src
           go run ./main.go > /tmp/beam.log &
+          sleep 15
           ps -eaf | grep "main.go"
           ps -eaf | grep go
           cd e2e
