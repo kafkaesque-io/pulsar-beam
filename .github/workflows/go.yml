@@ -150,7 +150,7 @@ jobs:
           ls -l /etc/ssl/certs/ca-certificates.crt
           pwd
           cd src
-          go run ./main.go &
+          go run ./main.go
           ps -eaf | grep "main.go"
           ps -eaf | grep go
           cd e2e
