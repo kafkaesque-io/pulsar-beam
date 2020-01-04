@@ -152,14 +152,16 @@ jobs:
           ls -l /etc/ssl/certs/ca-certificates.crt
           pwd
           cd src
-          go run ./main.go > ./beam.log &
+          go build -o main ./main.go
+          ls
+          ./main > ./beam.log &
           date
           sleep 15
           date
           sudo netstat -tulpn | grep LISTEN
           ls ./beam.log
           cat ./beam.log
-          ps -eaf | grep "main.go"
+          ps -eaf | grep "main"
           cd e2e
           pwd
           cat ../beam.log
