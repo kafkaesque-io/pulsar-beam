@@ -11,6 +11,7 @@ import (
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/model"
+	"github.com/pulsar-beam/src/util"
 )
 
 // This is an end to end test program. It does these steps in order
@@ -147,7 +148,7 @@ func consumeToVerify() {
 	log.Println("Pulsar Consumer")
 
 	// Configuration variables pertaining to this consumer
-	trustStore := "/etc/ssl/certs/ca-bundle.crt"
+	trustStore := util.AssignString(os.Getenv("TrustStore"), "/etc/ssl/certs/ca-bundle.crt")
 	subscriptionName := "my-subscription"
 
 	token := pulsar.NewAuthenticationToken(pulsarToken)
