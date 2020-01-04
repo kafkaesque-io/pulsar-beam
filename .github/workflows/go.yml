@@ -138,6 +138,7 @@ jobs:
           ls /etc/ssl/certs
       - name: Start daemon
         env:
+          PORT: 3000
           PbDbInterval: 60s
           TrustStore: /etc/ssl/certs/ca-certificates.crt
           FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
@@ -155,6 +156,7 @@ jobs:
           sleep 15
           date
           ls ./beam.log
+          cat ./beam.log
           ps -eaf | grep "main.go"
           cd e2e
           pwd
