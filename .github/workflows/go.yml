@@ -91,8 +91,9 @@ jobs:
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
 
-  sonar:
-    name: docker
+  e2e_test:
+    name: e2e_test
+    needs: [analysis, build_test]
     runs-on: ubuntu-latest 
     steps:
       - name: Check out code
@@ -101,10 +102,6 @@ jobs:
           fetch-depth: 1
           path: go/src/github.com/pulsar-beam
 
-      - name: Build Docker Image
-        run: |
-          pwd
-          sudo docker build -t pulsar-beam .
       - name: Install dependencies
         run: |
           pwd
@@ -127,12 +124,59 @@ jobs:
         run: |
           ls /var/lib/mongodb
           sudo systemctl status mongodb
-      - name: Start Docker
+      - name: Set up root certificate
+        env:
+          PULSAR_CLIENT_CERT: ${{ secrets.PULSAR_CLIENT_CERT }}
         run: |
           pwd
-          ls
+          sudo apt-get install ca-certificates -y
+          sudo mkdir -p /usr/local/share/ca-certificate
+          echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > ./pulsar-ca.crt
+          sudo cp ./pulsar-ca.crt /usr/local/share/ca-certificate/pulsar-ca.crt
+          ls /usr/local/share/ca-certificate
+          sudo update-ca-certificates
           ls /etc/ssl/certs
-      - name: Build e2e test tool
+      - name: Start daemon
+        env:
+          PORT: 3000
+          PbDbInterval: 60s
+          TrustStore: /etc/ssl/certs/ca-certificates.crt
+          FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
+          PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
+          PULSAR_URI: ${{ secrets.PULSAR_URI }}
+          REST_API_TOKEN: ${{ secrets.REST_API_TOKEN }}
+          WEBHOOK2_URL: ${{ secrets.WEBHOOK2_URL }}
+          WEBHOOK_TOPIC: ${{ secrets.WEBHOOK_TOPIC }}
         run: |
-          cd src/e2e
-          go build -o ./e2etest ./e2etest.go
+          sudo apt-get install -y net-tools
+          ls -l /etc/ssl/certs/ca-certificates.crt
+          pwd
+          cd src
+          go build -o main ./main.go
+          ls
+          ./main > ./beam.log &
+          sleep 15
+          sudo netstat -tulpn | grep LISTEN
+          ls ./beam.log
+          cat ./beam.log
+          ps -eaf | grep "main"
+          cd e2e
+          pwd
+          curl -v -H "Authorization: testkey" http://localhost:3000/status
+          go run ./e2etest.go
+          cat ../beam.log
+
+  docker:
+    name: docker
+    runs-on: ubuntu-latest 
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/pulsar-beam
+
+      - name: Build Docker Image
+        run: |
+          pwd
+          sudo docker build -t pulsar-beam .

@@ -1,5 +1,7 @@
 # Pulsar Beam
 
+![](https://github.com/kafkaesque-io/pulsar-beam/workflows/build%20and%20test/badge.svg)
+
 Beam is a http based streaming and queueing system that is backed up by Apache Pulsar.
 
 1. Data can be sent to Pulsar via an HTTP POST method as a producer.
