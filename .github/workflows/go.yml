@@ -148,6 +148,7 @@ jobs:
           WEBHOOK2_URL: ${{ secrets.WEBHOOK2_URL }}
           WEBHOOK_TOPIC: ${{ secrets.WEBHOOK_TOPIC }}
         run: |
+          sudo apt-get install -y net-tools
           ls -l /etc/ssl/certs/ca-certificates.crt
           pwd
           cd src
@@ -155,6 +156,7 @@ jobs:
           date
           sleep 15
           date
+          sudo netstat -tulpn | grep LISTEN
           ls ./beam.log
           cat ./beam.log
           ps -eaf | grep "main.go"
