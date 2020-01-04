@@ -149,6 +149,7 @@ func consumeToVerify() {
 
 	// Configuration variables pertaining to this consumer
 	trustStore := util.AssignString(os.Getenv("TrustStore"), "/etc/ssl/certs/ca-bundle.crt")
+	log.Printf("trust store %v", trustStore)
 	subscriptionName := "my-subscription"
 
 	token := pulsar.NewAuthenticationToken(pulsarToken)
