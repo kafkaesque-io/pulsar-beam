@@ -6,7 +6,7 @@ Beam is a http based streaming and queueing system that is backed up by Apache P
 
 1. Data can be sent to Pulsar via an HTTP POST method as a producer.
 2. To consume the data, data can be pushed to a webhook.
-3. To consume the data, data can be retrieved by an HTTP GET method.
+3. A webhook can reply processed message, in the response body, back to another Pulsar topic via Pulsar Beam.
 
 The development is in an early stage. Please email `contact@kafkaesque.io` for any inquiry or demo. Opening an issue and PR are welcomed!
 
@@ -30,10 +30,9 @@ These HTTP headers are required to map to Pulsar topic.
 3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL is required
 
 ### Webhook registration
+Webhook registration is done via REST API backed by MongoDB.
 
-In the current prototype, webhook registration is specified in ./config/prototype-db/default.json.
-
-The registration will be moved to a permenant database soon.
+TODO: add REST API document.
 
 ### Sink source
 
