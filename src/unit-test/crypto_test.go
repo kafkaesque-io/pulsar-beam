@@ -86,8 +86,14 @@ func TestGenWriteKey(t *testing.T) {
 }
 
 func TestJWTRSASignAndVerify(t *testing.T) {
-	publicKeyPath := "./example_public_key.pub"
-	privateKeyPath := "./example_private_key"
+	// PK12 binary format
+	testTokenSignAndVerify(t, "./b-private.key", "./b-public.key")
+
+	// PEM format
+	testTokenSignAndVerify(t, "./example_private_key", "./example_public_key.pub")
+}
+
+func testTokenSignAndVerify(t *testing.T, privateKeyPath, publicKeyPath string) {
 	authen := NewRSAKeyPair(privateKeyPath, publicKeyPath)
 
 	tokenString, err := authen.GenerateToken("myadmin")
