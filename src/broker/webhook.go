@@ -93,14 +93,14 @@ func pushWebhook(url, data string) (int, *http.Response) {
 
 	body, err2 := json.Marshal(JSONData{data})
 	if err2 != nil {
-		log.Fatalln(err2)
+		log.Printf("webhok data marshalling error %s", err2.Error())
 		return http.StatusUnprocessableEntity, nil
 	}
 
 	res, err := client.Post(url, "application/json", body)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Printf("webhook post error %s", err.Error())
 		return http.StatusInternalServerError, nil
 	}
 
@@ -151,7 +151,6 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription string) error {
 		return errors.New("Failed to create Pulsar consumer")
 	}
 
-	webhooks[subscription] = true
 	WriteWebhook(subscription)
 	ctx := context.Background()
 
@@ -176,6 +175,8 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription string) error {
 
 func run() {
 	log.Println("load webhooks")
+	subscriptionSet := make(map[string]bool)
+
 	for _, cfg := range LoadConfig() {
 		for _, whCfg := range cfg.Webhooks {
 			topic := cfg.TopicFullName
@@ -186,14 +187,21 @@ func run() {
 			subscription := util.AssignString(whCfg.Subscription, icrypto.GenTopicKey())
 			status := whCfg.WebhookStatus
 			ok := ReadWebhook(subscription)
-			if !ok && status == model.Activated {
-				log.Println("add activated webhook for topic " + subscription)
-				go ConsumeLoop(url, token, topic, webhookURL, subscription)
-			} else if ok && status != model.Activated {
-				log.Printf("cancel webhook consumer subscription %v", subscription)
-				cancelConsumer(subscription)
+			if status == model.Activated {
+				subscriptionSet[subscription] = true
+				if !ok {
+					log.Printf("add activated webhook for topic subscription %v" + subscription)
+					go ConsumeLoop(url, token, topic, webhookURL, subscription)
+				}
 			}
-			// TODO implement a delete list because we do not scan for already removed webhooks
+		}
+	}
+
+	// cancel any webhook which is no longer required to be activated by the database
+	for k := range webhooks {
+		if subscriptionSet[k] != true {
+			log.Printf("cancel webhook consumer subscription %v", k)
+			cancelConsumer(k)
 		}
 	}
 }

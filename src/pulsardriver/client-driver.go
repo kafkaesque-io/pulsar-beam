@@ -34,7 +34,7 @@ func getTopicDriver(url, tokenStr string) pulsar.Client {
 	})
 
 	if err != nil {
-		log.Fatalf("Could not instantiate Pulsar client: %v", err)
+		log.Printf("Could not instantiate Pulsar client: %v", err)
 		return nil
 	}
 
@@ -111,7 +111,7 @@ func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
 		SubscriptionName: subscription,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("failed subscribe to pulsar consumer %v", err)
 		return nil
 	}
 	consumers[key] = consumer
