@@ -6,8 +6,10 @@ import (
 	"bufio"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/binary"
 	"encoding/pem"
 	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -117,66 +119,126 @@ func (keys *RSAKeyPair) GetTokenRemainingValidity(timestamp interface{}) int {
 	return expireOffset
 }
 
-func getPrivateKey(privateKeyPath string) *rsa.PrivateKey {
-	privateKeyFile, err := os.Open(privateKeyPath)
+// supports pk12 jks binary format
+func readPK12(file string) ([]byte, error) {
+	osFile, err := os.Open(file)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+	reader := bufio.NewReaderSize(osFile, 4)
+
+	return ioutil.ReadAll(reader)
+}
+
+// decode PEM format to array of bytes
+func decodePEM(pemFilePath string) ([]byte, error) {
+	keyFile, err := os.Open(pemFilePath)
+	defer keyFile.Close()
+	if err != nil {
+		return nil, err
 	}
 
-	pemfileinfo, _ := privateKeyFile.Stat()
-	var size int64 = pemfileinfo.Size()
-	pembytes := make([]byte, size)
+	pemfileinfo, _ := keyFile.Stat()
+	pembytes := make([]byte, pemfileinfo.Size())
 
-	buffer := bufio.NewReader(privateKeyFile)
+	buffer := bufio.NewReader(keyFile)
 	_, err = buffer.Read(pembytes)
 
 	data, _ := pem.Decode([]byte(pembytes))
+	return data.Bytes, err
+}
 
-	privateKeyFile.Close()
-
-	// PKCS8 comply with Pulsar Java generated private key
-	key, err := x509.ParsePKCS8PrivateKey(data.Bytes)
+func parseX509PKCS8PrivateKey(data []byte) *rsa.PrivateKey {
+	key, err := x509.ParsePKCS8PrivateKey(data)
 
 	if err != nil {
 		panic(err)
 	}
 
-	privateKeyImported, ok := key.(*rsa.PrivateKey)
+	rsaPrivate, ok := key.(*rsa.PrivateKey)
 	if !ok {
 		log.Fatalf("expected key to be of type *ecdsa.PrivateKey, but actual was %T", key)
 	}
 
-	return privateKeyImported
+	return rsaPrivate
 }
 
-func getPublicKey(publicKeyPath string) *rsa.PublicKey {
-	publicKeyFile, err := os.Open(publicKeyPath)
-	if err != nil {
-		panic(err)
-	}
-
-	pemfileinfo, _ := publicKeyFile.Stat()
-	var size int64 = pemfileinfo.Size()
-	pembytes := make([]byte, size)
-
-	buffer := bufio.NewReader(publicKeyFile)
-	_, err = buffer.Read(pembytes)
-
-	data, _ := pem.Decode([]byte(pembytes))
-
-	publicKeyFile.Close()
-
-	publicKeyImported, err := x509.ParsePKIXPublicKey(data.Bytes)
+func parseX509PKIXPublicKey(data []byte) *rsa.PublicKey {
+	publicKeyImported, err := x509.ParsePKIXPublicKey(data)
 
 	if err != nil {
 		panic(err)
 	}
 
 	rsaPub, ok := publicKeyImported.(*rsa.PublicKey)
-
 	if !ok {
 		panic(err)
 	}
 
 	return rsaPub
+}
+
+// Since we support PEM And binary fomat of PKCS12/X509 keys,
+// this function tries to determine which format
+func fileFormat(file string) (string, error) {
+	osFile, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	reader := bufio.NewReaderSize(osFile, 4)
+	// attempt to guess based on first 4 bytes of input
+	data, err := reader.Peek(4)
+	if err != nil {
+		return "", err
+	}
+
+	magic := binary.BigEndian.Uint32(data)
+	if magic == 0x2D2D2D2D || magic == 0x434f4e4e {
+		// Starts with '----' or 'CONN' (what s_client prints...)
+		return "PEM", nil
+	}
+	if magic&0xFFFF0000 == 0x30820000 {
+		// Looks like the input is DER-encoded, so it's either PKCS12 or X.509.
+		if magic&0x0000FF00 == 0x0300 {
+			// Probably X.509
+			return "DER", nil
+		}
+		return "PKCS12", nil
+	}
+
+	return "", errors.New("undermined format")
+}
+
+func getDataFromKeyFile(file string) ([]byte, error) {
+	format, err := fileFormat(file)
+	if err != nil {
+		return nil, err
+	}
+
+	switch format {
+	case "PEM":
+		return decodePEM(file)
+	case "PKCS12":
+		return readPK12(file)
+	default:
+		return nil, errors.New("unsupported format")
+	}
+}
+
+func getPrivateKey(file string) *rsa.PrivateKey {
+	data, err := getDataFromKeyFile(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return parseX509PKCS8PrivateKey(data)
+}
+
+func getPublicKey(file string) *rsa.PublicKey {
+	data, err := getDataFromKeyFile(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return parseX509PKIXPublicKey(data)
 }
