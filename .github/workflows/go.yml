@@ -139,7 +139,7 @@ jobs:
       - name: Start daemon
         env:
           PORT: 3000
-          PbDbInterval: 60s
+          PbDbInterval: 15s
           TrustStore: /etc/ssl/certs/ca-certificates.crt
           FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
           PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
