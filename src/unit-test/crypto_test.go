@@ -87,7 +87,7 @@ func TestGenWriteKey(t *testing.T) {
 
 func TestJWTRSASignAndVerify(t *testing.T) {
 	// PK12 binary format
-	testTokenSignAndVerify(t, "./b-private.key", "./b-public.key")
+	testTokenSignAndVerify(t, "./pk12-binary-private.key", "./pk12-binary-public.key")
 
 	// PEM format
 	testTokenSignAndVerify(t, "./example_private_key", "./example_public_key.pub")
