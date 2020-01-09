@@ -18,6 +18,8 @@ type Crud interface {
 	Create(topicCfg *model.TopicConfig) (string, error)
 	Delete(topicFullName, pulsarURL string) (string, error)
 	DeleteByKey(hashedTopicKey string) (string, error)
+
+	// Load is invoked by the webhook.go to start new wekbooks and stop deleted ones
 	Load() ([]*model.TopicConfig, error)
 }
 
@@ -45,6 +47,10 @@ func NewDb(reqDbType string) (Db, error) {
 	switch reqDbType {
 	case "mongo":
 		dbConn, err = NewMongoDb()
+	case "pulsarAsDb":
+		dbConn, err = NewPulsarHandler()
+	case "inmemory":
+		dbConn, err = NewInMemoryHandler()
 	default:
 		err = errors.New("unsupported db type")
 	}
@@ -59,3 +65,9 @@ func NewDbWithPanic(reqDbType string) Db {
 	}
 	return newDb
 }
+
+// DocNotFound means no document found in the database
+var DocNotFound = "no document found"
+
+// DocAlreadyExisted means document already existed in the database when a new creation is requested
+var DocAlreadyExisted = "document already existed"

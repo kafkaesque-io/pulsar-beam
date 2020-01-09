@@ -93,7 +93,7 @@ func pushWebhook(url, data string) (int, *http.Response) {
 
 	body, err2 := json.Marshal(JSONData{data})
 	if err2 != nil {
-		log.Printf("webhok data marshalling error %s", err2.Error())
+		log.Printf("webhook data marshalling error %s", err2.Error())
 		return http.StatusUnprocessableEntity, nil
 	}
 
@@ -174,7 +174,6 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription string) error {
 }
 
 func run() {
-	log.Println("load webhooks")
 	subscriptionSet := make(map[string]bool)
 
 	for _, cfg := range LoadConfig() {
@@ -190,7 +189,7 @@ func run() {
 			if status == model.Activated {
 				subscriptionSet[subscription] = true
 				if !ok {
-					log.Printf("add activated webhook for topic subscription %v" + subscription)
+					log.Printf("add activated webhook for topic subscription %v", subscription)
 					go ConsumeLoop(url, token, topic, webhookURL, subscription)
 				}
 			}
@@ -200,10 +199,11 @@ func run() {
 	// cancel any webhook which is no longer required to be activated by the database
 	for k := range webhooks {
 		if subscriptionSet[k] != true {
-			log.Printf("cancel webhook consumer subscription %v", k)
+			log.Printf("cancel webhook consumer subscription key %s", k)
 			cancelConsumer(k)
 		}
 	}
+	log.Println("load webhooks", len(webhooks))
 }
 
 // LoadConfig loads the entire topic documents from the database

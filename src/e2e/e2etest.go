@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/pulsar-beam/src/icrypto"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
@@ -115,10 +117,11 @@ func deleteWebhook(key string) {
 	eval(resp.StatusCode == 200, "expected receiver status code is 200")
 }
 
-func produceMessage() {
+func produceMessage() string {
 
 	beamReceiverURL := "http://localhost:3000/v1/firehose"
-	originalData := []byte("hello-from-e2e-test")
+	sentMessage := "hello-from-e2e-test " + icrypto.GenTopicKey()
+	originalData := []byte(sentMessage)
 
 	//Send to Pulsar Beam
 	req, err := http.NewRequest("POST", beamReceiverURL, bytes.NewBuffer(originalData))
@@ -142,9 +145,10 @@ func produceMessage() {
 
 	eval(resp.StatusCode == 200, "expected receiver status code is 200")
 
+	return sentMessage
 }
 
-func consumeToVerify() {
+func consumeToVerify(verifyStr string) {
 	log.Println("Pulsar Consumer")
 
 	// Configuration variables pertaining to this consumer
@@ -172,26 +176,33 @@ func consumeToVerify() {
 	errNil(err)
 	defer consumer.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 360*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 181*time.Second)
 	defer cancel()
 
-	msg, err := consumer.Receive(ctx)
-	errNil(err)
-	log.Printf("Received message : %v\n", string(msg.Payload()))
+	receivedStr := ""
 
-	consumer.Ack(msg)
+	// replied string has suffix
+	for strings.HasSuffix(receivedStr, verifyStr) {
+		msg, err := consumer.Receive(ctx)
+		errNil(err)
+
+		receivedStr = string(msg.Payload())
+		log.Printf("Received message : %v\n", receivedStr)
+
+		consumer.Ack(msg)
+	}
 }
 
 func main() {
 
 	key := addWebhookToDb()
 	log.Println(key)
-	produceMessage()
+	sentStr := produceMessage()
 
 	// timeout to fail the test case if no message received
 	time.AfterFunc(181*time.Second, func() {
 		os.Exit(2)
 	})
-	consumeToVerify()
+	consumeToVerify(sentStr)
 	deleteWebhook(key)
 }

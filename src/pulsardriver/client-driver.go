@@ -13,7 +13,8 @@ var connections = make(map[string]pulsar.Client)
 var producers = make(map[string]pulsar.Producer)
 var consumers = make(map[string]pulsar.Consumer)
 
-func getTopicDriver(url, tokenStr string) pulsar.Client {
+// GetTopicDriver acquires a new pulsar client
+func GetTopicDriver(url, tokenStr string) pulsar.Client {
 	// TODO: add code to tell CentOS or Ubuntu
 	trustStore := util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
 	key := tokenStr
@@ -50,7 +51,7 @@ func getProducer(url, token, topic string) pulsar.Producer {
 		return p
 	}
 
-	driver := getTopicDriver(url, token)
+	driver := GetTopicDriver(url, token)
 	if driver == nil {
 		return nil
 	}
@@ -84,7 +85,7 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 
 	p.SendAsync(ctx, asyncMsg, func(msg pulsar.ProducerMessage, err error) {
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("send to Pulsar err %v", err)
 			// TODO: add retry
 		}
 
@@ -100,7 +101,7 @@ func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
 		return consumer
 	}
 
-	driver := getTopicDriver(url, token)
+	driver := GetTopicDriver(url, token)
 	if driver == nil {
 		return nil
 	}
@@ -109,6 +110,7 @@ func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
 		Topic:            topic,
 		SubscriptionName: subscription,
+		// ReadCompacted:    true,
 	})
 	if err != nil {
 		log.Printf("failed subscribe to pulsar consumer %v", err)
