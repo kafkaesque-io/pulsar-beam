@@ -49,6 +49,8 @@ func NewDb(reqDbType string) (Db, error) {
 		dbConn, err = NewMongoDb()
 	case "pulsarAsDb":
 		dbConn, err = NewPulsarHandler()
+	case "inmemory":
+		dbConn, err = NewInMemoryHandler()
 	default:
 		err = errors.New("unsupported db type")
 	}
@@ -66,3 +68,6 @@ func NewDbWithPanic(reqDbType string) Db {
 
 // DocNotFound means no document found in the database
 var DocNotFound = "no document found"
+
+// DocAlreadyExisted means document already existed in the database when a new creation is requested
+var DocAlreadyExisted = "document already existed"

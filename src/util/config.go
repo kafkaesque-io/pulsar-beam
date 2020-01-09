@@ -90,7 +90,7 @@ func ReadConfigFile(configFile string) {
 		}
 	}
 
-	log.Println(Config.PORT, Config.PbDbType)
+	log.Println(Config.PORT, Config.PbDbType, Config.PbDbInterval)
 }
 
 //GetConfig returns a reference to the Configuration

@@ -30,7 +30,7 @@ These HTTP headers are required to map to Pulsar topic.
 3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL is required
 
 ### Webhook registration
-Webhook registration is done via REST API backed by MongoDB.
+Webhook registration is done via REST API backed by configurable database, such as MongoDB, in momery cache, and Pulsar topic. Yes, we can use a compacted Pulsar Topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.json` file or the env variable `PbDbType`.
 
 TODO: add REST API document.
 

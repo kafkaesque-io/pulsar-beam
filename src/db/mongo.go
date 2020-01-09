@@ -93,7 +93,6 @@ func NewMongoDb() (*MongoDb, error) {
 
 // Create creates a new document
 func (s *MongoDb) Create(topicCfg *model.TopicConfig) (string, error) {
-
 	key, err := getKey(topicCfg)
 	if err != nil {
 		return key, err
@@ -129,7 +128,9 @@ func (s *MongoDb) GetByKey(hashedTopicKey string) (*model.TopicConfig, error) {
 
 	err := result.Decode(&doc)
 	if err != nil {
-		// if err.Error() == "mongo: no documents in result" {
+		if err.Error() == "mongo: no documents in result" {
+			err = errors.New(DocNotFound)
+		}
 		return &model.TopicConfig{}, err
 	}
 	return &doc, nil
