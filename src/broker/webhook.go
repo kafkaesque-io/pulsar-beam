@@ -93,7 +93,7 @@ func pushWebhook(url, data string) (int, *http.Response) {
 
 	body, err2 := json.Marshal(JSONData{data})
 	if err2 != nil {
-		log.Printf("webhok data marshalling error %s", err2.Error())
+		log.Printf("webhook data marshalling error %s", err2.Error())
 		return http.StatusUnprocessableEntity, nil
 	}
 

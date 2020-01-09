@@ -45,6 +45,8 @@ func NewDb(reqDbType string) (Db, error) {
 	switch reqDbType {
 	case "mongo":
 		dbConn, err = NewMongoDb()
+	case "pulsarAsDb":
+		dbConn, err = NewPulsarHandler()
 	default:
 		err = errors.New("unsupported db type")
 	}
@@ -59,3 +61,6 @@ func NewDbWithPanic(reqDbType string) Db {
 	}
 	return newDb
 }
+
+// DocNotFound means no document found in the database
+var DocNotFound = "no document found"

@@ -15,18 +15,32 @@ const DefaultConfigFile = "../config/pulsar_beam.json"
 
 // Configuration - this server's configuration
 type Configuration struct {
-	PORT             string `json:"PORT"`
-	CLUSTER          string `json:"CLUSTER"`
-	User             string `json:"User"`
-	Pass             string `json:"Pass"`
-	DbName           string `json:"DbName"`
-	DbConnectionStr  string `json:"DbConnectionStr"`
+	PORT    string `json:"PORT"`
+	CLUSTER string `json:"CLUSTER"`
+	User    string `json:"User"`
+	Pass    string `json:"Pass"`
+
+	// DbName is the database name in mongo or topic name
+	DbName string `json:"DbName"`
+
+	// DbPassword is either password or token for the database
+	DbPassword string `json:"DbPassword"`
+
+	// DbConnectionStr can be mongo url or pulsar url
+	DbConnectionStr string `json:"DbConnectionStr"`
+
+	// PbDbType is the database type mongo or pulsar
 	PbDbType         string `json:"PbDbType"`
 	PulsarPublicKey  string `json:"PulsarPublicKey"`
 	PulsarPrivateKey string `json:"PulsarPrivateKey"`
 	SuperRoles       string `json:"SuperRoles"`
-	PbDbInterval     string `json:"PbDbInterval"`
-	TrustStore       string `json:"TrustStore"`
+
+	// Webhook consumers pool checked interval to stop deleted consumers and start new ones
+	// default value 180s
+	PbDbInterval string `json:"PbDbInterval"`
+
+	// Pulsar CA certificate key store
+	TrustStore string `json:"TrustStore"`
 }
 
 // Config - this server's configuration instance
@@ -76,7 +90,7 @@ func ReadConfigFile(configFile string) {
 		}
 	}
 
-	log.Println(Config)
+	log.Println(Config.PORT, Config.PbDbType)
 }
 
 //GetConfig returns a reference to the Configuration
