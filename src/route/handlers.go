@@ -191,7 +191,7 @@ func VerifySubject(topicFN, tokenSub string) bool {
 		return false
 	}
 	tenant := parts[2]
-	log.Printf(" tenant %s token sub %s", tenant, tokenSub)
+	log.Printf(" auth verify tenant %s token sub %s", tenant, tokenSub)
 	if len(tenant) < 1 {
 		return false
 	}

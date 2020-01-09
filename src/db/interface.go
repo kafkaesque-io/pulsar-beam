@@ -18,6 +18,8 @@ type Crud interface {
 	Create(topicCfg *model.TopicConfig) (string, error)
 	Delete(topicFullName, pulsarURL string) (string, error)
 	DeleteByKey(hashedTopicKey string) (string, error)
+
+	// Load is invoked by the webhook.go to start new wekbooks and stop deleted ones
 	Load() ([]*model.TopicConfig, error)
 }
 

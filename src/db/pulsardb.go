@@ -39,6 +39,8 @@ func (s *PulsarHandler) Init() error {
 	tokenStr := util.GetConfig().DbPassword
 	token := pulsar.NewAuthenticationToken(tokenStr)
 
+	log.Println(pulsarURL, topicName, trustStore)
+	log.Println(tokenStr)
 	var err error
 	s.client, err = pulsar.NewClient(pulsar.ClientOptions{
 		URL:                     pulsarURL,
@@ -65,7 +67,7 @@ func (s *PulsarHandler) Init() error {
 
 	s.reader, err = s.client.CreateReader(pulsar.ReaderOptions{
 		Topic:          topicName,
-		StartMessageID: pulsar.LatestMessage,
+		StartMessageID: pulsar.EarliestMessage,
 		ReadCompacted:  true,
 	})
 
@@ -82,6 +84,9 @@ func (s *PulsarHandler) Init() error {
 				if err := json.Unmarshal(msg.Payload(), &doc); err == nil {
 					if doc.TopicStatus != model.Deleted {
 						topics[doc.Key] = doc
+						log.Println(topics[doc.Key].PulsarURL)
+					} else {
+						delete(topics, doc.Key)
 					}
 				} else {
 					log.Printf("json unmarshal error %v", err)
@@ -90,6 +95,7 @@ func (s *PulsarHandler) Init() error {
 				log.Printf("pulsar db reader err %v", err)
 				// Report and fix ...
 			}
+
 		}
 	}()
 
@@ -149,7 +155,7 @@ func (s *PulsarHandler) updateCacheAndPulsar(topicCfg *model.TopicConfig) (strin
 	if err = s.producer.Send(ctx, msg); err != nil {
 		return "", err
 	}
-	s.producer.Flush()
+	// s.producer.Flush() do not use it's a blocking call
 
 	log.Println("send to Pulsar ", topicCfg.Key)
 
@@ -239,7 +245,6 @@ func (s *PulsarHandler) DeleteByKey(hashedTopicKey string) (string, error) {
 	if err = s.producer.Send(ctx, msg); err != nil {
 		return "", err
 	}
-	s.producer.Flush()
 
 	delete(topics, v.Key)
 	return hashedTopicKey, nil
