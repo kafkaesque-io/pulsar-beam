@@ -77,12 +77,25 @@ jobs:
         run: |
           cd src
           go vet ./...
+      - name: Set up root certificate
+        env:
+          PULSAR_CLIENT_CERT: ${{ secrets.PULSAR_CLIENT_CERT }}
+        run: |
+          pwd
+          sudo apt-get install ca-certificates -y
+          sudo mkdir -p /usr/local/share/ca-certificate
+          echo $PULSAR_CLIENT_CERT | sed 's/\\n/\n/g' > ./pulsar-ca.crt
+          sudo cp ./pulsar-ca.crt /usr/local/share/ca-certificate/pulsar-ca.crt
+          ls /usr/local/share/ca-certificate
+          sudo update-ca-certificates
+          ls /etc/ssl/certs
       - name: Run Tests
         run: |
           cd src/unit-test
           go test -v ./...
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
+          TrustStore: /etc/ssl/certs/ca-certificates.crt
           PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
           PULSAR_URI: ${{ secrets.PULSAR_URI }}
           REST_DB_TABLE_TOPIC: ${{ secrets.REST_DB_TABLE_TOPIC }}
@@ -93,6 +106,7 @@ jobs:
           ./test_coverage.sh
         env:
           GOPATH: /home/runner/work/pulsar-beam/go
+          TrustStore: /etc/ssl/certs/ca-certificates.crt
           PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
           PULSAR_URI: ${{ secrets.PULSAR_URI }}
           REST_DB_TABLE_TOPIC: ${{ secrets.REST_DB_TABLE_TOPIC }}
