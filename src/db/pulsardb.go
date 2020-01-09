@@ -39,8 +39,6 @@ func (s *PulsarHandler) Init() error {
 	tokenStr := util.GetConfig().DbPassword
 	token := pulsar.NewAuthenticationToken(tokenStr)
 
-	log.Println(pulsarURL, topicName, trustStore)
-	log.Println(tokenStr)
 	var err error
 	s.client, err = pulsar.NewClient(pulsar.ClientOptions{
 		URL:                     pulsarURL,

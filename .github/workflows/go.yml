@@ -91,6 +91,7 @@ jobs:
           ls /etc/ssl/certs
       - name: Run Tests
         run: |
+          echo $TrustStore
           cd src/unit-test
           go test -v ./...
         env:
@@ -178,14 +179,11 @@ jobs:
           ./main > ./beam.log &
           sleep 15
           sudo netstat -tulpn | grep LISTEN
-          ls ./beam.log
-          cat ./beam.log
           ps -eaf | grep "main"
           cd e2e
           pwd
           curl -v -H "Authorization: testkey" http://localhost:3000/status
           go run ./e2etest.go
-          cat ../beam.log
 
   docker:
     name: docker
