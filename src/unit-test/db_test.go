@@ -218,6 +218,7 @@ func TestPulsarDbDriver(t *testing.T) {
 	util.Config.DbName = os.Getenv("REST_DB_TABLE_TOPIC")
 	util.Config.DbPassword = os.Getenv("PULSAR_TOKEN")
 	util.Config.PbDbType = "pulsarAsDb"
+	util.Config.TrustStore = os.Getenv("TrustStore")
 	if util.GetConfig().DbPassword == "" {
 		util.ReadConfigFile("../" + util.DefaultConfigFile)
 		return
