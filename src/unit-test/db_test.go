@@ -236,10 +236,10 @@ func TestInMemoryDatabase(t *testing.T) {
 }
 
 func TestPulsarDbDriver(t *testing.T) {
-	util.GetConfig().DbConnectionStr = os.Getenv("PULSAR_URI")
-	util.GetConfig().DbName = os.Getenv("REST_DB_TABLE_TOPIC")
-	util.GetConfig().DbPassword = os.Getenv("PULSAR_TOKEN")
-	log.Println(util.GetConfig())
+	util.Config.DbConnectionStr = os.Getenv("PULSAR_URI")
+	util.Config.DbName = os.Getenv("REST_DB_TABLE_TOPIC")
+	util.Config.DbPassword = os.Getenv("PULSAR_TOKEN")
+	util.Config.PbDbType = "pulsarAsDb"
 	if util.GetConfig().DbPassword == "" {
 		util.ReadConfigFile("../" + util.DefaultConfigFile)
 		return

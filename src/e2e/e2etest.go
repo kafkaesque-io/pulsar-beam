@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
@@ -180,8 +181,8 @@ func consumeToVerify(verifyStr string) {
 
 	receivedStr := ""
 
-	// replied prefix is added by the Cloud function preconfigured
-	for receivedStr != ("replied " + verifyStr) {
+	// replied string has suffix
+	for strings.HasSuffix(receivedStr, verifyStr) {
 		msg, err := consumer.Receive(ctx)
 		errNil(err)
 
