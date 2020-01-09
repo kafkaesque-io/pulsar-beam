@@ -126,9 +126,6 @@ func TestMongoDbDriver(t *testing.T) {
 }
 
 func TestInMemoryDatabase(t *testing.T) {
-	os.Setenv("CLUSTER", "unittest")
-	dbTarget := "inmemory"
-
 	// a test case 1) connect to a local mongodb
 	// 2) test with ping
 	// 3) create a document
@@ -137,8 +134,7 @@ func TestInMemoryDatabase(t *testing.T) {
 	// 6) load/retreive all documents, iterate to find a document
 	// 7) delete a document
 	// 8) get a document to ensure it's deleted
-	NewDbWithPanic(dbTarget)
-	inmemorydb, err := NewDb(dbTarget)
+	inmemorydb, err := NewInMemoryHandler()
 	errNil(t, err)
 
 	err = inmemorydb.Sync()
@@ -200,39 +196,21 @@ func TestInMemoryDatabase(t *testing.T) {
 	}
 	equals(t, found, true)
 
-	// test webhook database load()
-	broker.NewDbHandler()
-	topics := broker.LoadConfig()
-	equals(t, len(res), len(topics))
-
 	resTopic, err := inmemorydb.GetByTopic(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
 	equals(t, topic.Token, resTopic.Token)
 	equals(t, topic.PulsarURL, resTopic.PulsarURL)
 
-	// test singleton
-	inmemorydb2, err := NewDb(dbTarget)
-	errNil(t, err)
-
-	docs2, err2 := inmemorydb2.Load()
-	errNil(t, err2)
-	equals(t, 1, len(docs2))
-
-	resTopic2, err := inmemorydb2.GetByKey(resTopic.Key)
-	errNil(t, err)
-	equals(t, topic.Token, resTopic2.Token)
-	equals(t, topic.PulsarURL, resTopic2.PulsarURL)
-
-	deletedKey, err := inmemorydb2.Delete(topic.TopicFullName, topic.PulsarURL)
+	deletedKey, err := inmemorydb.Delete(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
 	equals(t, deletedKey, key)
 
-	resTopic2, err = inmemorydb2.GetByKey(resTopic.Key)
+	_, err = inmemorydb.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), DocNotFound)
 	// TODO: find a place to test Close(); need to find out depedencies.
 	// Comment out because there are other test cases require database.
-	// errNil(t, inmemorydb.Close())
+	errNil(t, inmemorydb.Close())
 }
 
 func TestPulsarDbDriver(t *testing.T) {
@@ -244,7 +222,6 @@ func TestPulsarDbDriver(t *testing.T) {
 		util.ReadConfigFile("../" + util.DefaultConfigFile)
 		return
 	}
-	dbTarget := "pulsarAsDb"
 
 	// a test case 1) connect to a local mongodb
 	// 2) test with ping
@@ -254,8 +231,7 @@ func TestPulsarDbDriver(t *testing.T) {
 	// 6) load/retreive all documents, iterate to find a document
 	// 7) delete a document
 	// 8) get a document to ensure it's deleted
-	NewDbWithPanic(dbTarget)
-	pulsardb, err := NewDb(dbTarget)
+	pulsardb, err := NewPulsarHandler()
 	errNil(t, err)
 
 	status := pulsardb.Health()
@@ -315,34 +291,25 @@ func TestPulsarDbDriver(t *testing.T) {
 	}
 	equals(t, found, true)
 
-	// test webhook database load()
-	broker.NewDbHandler()
-	topics := broker.LoadConfig()
-	equals(t, len(res), len(topics))
-
 	resTopic, err := pulsardb.GetByTopic(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
 	equals(t, topic.Token, resTopic.Token)
 	equals(t, topic.PulsarURL, resTopic.PulsarURL)
 
-	// test singleton
-	pulsardb2, err := NewDb(dbTarget)
-	errNil(t, err)
-
-	docs2, err2 := pulsardb2.Load()
+	docs2, err2 := pulsardb.Load()
 	errNil(t, err2)
 	equals(t, 1, len(docs2))
 
-	resTopic2, err := pulsardb2.GetByKey(resTopic.Key)
+	resTopic2, err := pulsardb.GetByKey(resTopic.Key)
 	errNil(t, err)
 	equals(t, topic.Token, resTopic2.Token)
 	equals(t, topic.PulsarURL, resTopic2.PulsarURL)
 
-	deletedKey, err := pulsardb2.Delete(topic.TopicFullName, topic.PulsarURL)
+	deletedKey, err := pulsardb.Delete(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
 	equals(t, deletedKey, key)
 
-	resTopic2, err = pulsardb2.GetByKey(resTopic.Key)
+	resTopic2, err = pulsardb.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), DocNotFound)
 	// TODO: find a place to test Close(); need to find out depedencies.

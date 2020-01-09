@@ -133,6 +133,10 @@ func (s *PulsarHandler) Create(topicCfg *model.TopicConfig) (string, error) {
 		return key, err
 	}
 
+	if _, ok := topics[key]; ok {
+		return key, errors.New(DocAlreadyExisted)
+	}
+
 	topicCfg.Key = key
 	topicCfg.CreatedAt = time.Now()
 	topicCfg.UpdatedAt = topicCfg.CreatedAt
