@@ -22,7 +22,7 @@ Immediately, Pulsar can be supported on Windows and any languages.
 ### Endpoint to receive messages
 
 ```
-/v1/{tenant}
+/v1/firehose
 ```
 These HTTP headers are required to map to Pulsar topic.
 1. Authorization -> Bearer token as Pulsar token

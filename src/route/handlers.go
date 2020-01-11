@@ -41,14 +41,12 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := mux.Vars(r)
-	tenant := vars["tenant"]
 	token, topicFN, pulsarURL, err2 := util.ReceiverHeader(&r.Header)
 	if err2 {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	log.Printf("tenant %s topicFN %s puslarURL %s", tenant, topicFN, pulsarURL)
+	log.Printf("topicFN %s puslarURL %s", topicFN, pulsarURL)
 
 	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b)
 	if err != nil {
