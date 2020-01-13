@@ -21,10 +21,6 @@ import (
 	"github.com/pulsar-beam/src/util"
 )
 
-// A webhook broker that reads configuration from a file
-// Definitely definitely we need a database to store the webhook configuration
-// This is a prototype only.
-
 // key is the hash of topic full name and pulsar url
 var webhooks = make(map[string]bool)
 var whLock = sync.RWMutex{}
@@ -173,7 +169,7 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription string, headers []s
 				headers = append(headers, fmt.Sprintf("PulsarEventTime:%s", msg.EventTime().String()))
 			}
 			for k, v := range msg.Properties() {
-				headers = append(headers, fmt.Sprintf("PulsarProperties%s:%s", k, v))
+				headers = append(headers, fmt.Sprintf("PulsarProperties-%s:%s", k, v))
 			}
 
 			data := msg.Payload()
@@ -219,7 +215,7 @@ func run() {
 			cancelConsumer(k)
 		}
 	}
-	log.Println("load webhooks", len(webhooks))
+	log.Println("load webhooks size ", len(webhooks))
 }
 
 // LoadConfig loads the entire topic documents from the database
