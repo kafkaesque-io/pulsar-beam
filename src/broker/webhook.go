@@ -122,8 +122,6 @@ func toPulsar(r *http.Response) {
 		log.Println(err2)
 		return
 	}
-	resBody := string(b)
-	log.Println(resBody)
 
 	err3 := pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b)
 	if err3 != nil {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
-	"github.com/pulsar-beam/src/icrypto"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
@@ -120,7 +120,7 @@ func deleteWebhook(key string) {
 func produceMessage() string {
 
 	beamReceiverURL := "http://localhost:3000/v1/firehose"
-	sentMessage := "hello-from-e2e-test " + icrypto.GenTopicKey()
+	sentMessage := fmt.Sprintf("hello-from-e2e-test %d", time.Now().Unix())
 	originalData := []byte(sentMessage)
 
 	//Send to Pulsar Beam
@@ -182,7 +182,8 @@ func consumeToVerify(verifyStr string) {
 	receivedStr := ""
 
 	// replied string has suffix
-	for strings.HasSuffix(receivedStr, verifyStr) {
+	log.Printf("expect received string %s", verifyStr)
+	for !strings.HasSuffix(receivedStr, verifyStr) {
 		msg, err := consumer.Receive(ctx)
 		errNil(err)
 

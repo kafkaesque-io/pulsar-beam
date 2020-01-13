@@ -31,7 +31,7 @@ var ReceiverRoutes = Routes{
 	Route{
 		"Receive",
 		"POST",
-		"/v1/{tenant}",
+		"/v1/firehose",
 		ReceiveHandler,
 		middleware.AuthHeaderRequired,
 	},
