@@ -119,7 +119,7 @@ func toPulsar(r *http.Response) {
 		log.Printf("error missing required topic headers from webhook/function")
 		return
 	}
-	log.Printf("topicURL %s puslarURL %s", topicFN, pulsarURL)
+	log.Printf("topicURL %s pulsarURL %s", topicFN, pulsarURL)
 
 	b, err2 := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -168,8 +168,13 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription string, headers []s
 		} else if msg != nil {
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%s", msg.ID()))
 			headers = append(headers, fmt.Sprintf("PulsarPublishedTime:%s", msg.PublishTime().String()))
-			headers = append(headers, fmt.Sprintf("PuslarTopic:%s", msg.Topic()))
-			headers = append(headers, fmt.Sprintf("PulsarEventTime:%s", msg.EventTime().String()))
+			headers = append(headers, fmt.Sprintf("PulsarTopic:%s", msg.Topic()))
+			if msg.EventTime() != nil {
+				headers = append(headers, fmt.Sprintf("PulsarEventTime:%s", msg.EventTime().String()))
+			}
+			for k, v := range msg.Properties() {
+				headers = append(headers, fmt.Sprintf("PulsarProperties%s:%s", k, v))
+			}
 
 			data := msg.Payload()
 			if json.Valid(data) {

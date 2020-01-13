@@ -79,10 +79,18 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 
 	ctx := context.Background()
 
+	id, err := util.NewUUID()
+	if err != nil {
+		// this is very bad if happens
+		log.Printf("NewUUID generation error %v", err)
+		id = string(time.Now().Unix())
+	}
+	prop := map[string]string{"PulsarBeamId": id}
 	// Create a different message to send asynchronously
 	asyncMsg := pulsar.ProducerMessage{
-		Payload:   data,
-		EventTime: time.Now(),
+		Payload:    data,
+		EventTime:  time.Now(),
+		Properties: prop,
 	}
 
 	p.SendAsync(ctx, asyncMsg, func(msg pulsar.ProducerMessage, err error) {

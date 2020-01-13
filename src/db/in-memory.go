@@ -64,7 +64,7 @@ func (s *InMemoryHandler) Create(topicCfg *model.TopicConfig) (string, error) {
 	return key, nil
 }
 
-// GetByTopic gets a document by the topic name and puslar URL
+// GetByTopic gets a document by the topic name and pulsar URL
 func (s *InMemoryHandler) GetByTopic(topicFullName, pulsarURL string) (*model.TopicConfig, error) {
 	key, err := model.GetKeyFromNames(topicFullName, pulsarURL)
 	if err != nil {
