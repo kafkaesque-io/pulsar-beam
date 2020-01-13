@@ -46,7 +46,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	log.Printf("topicFN %s puslarURL %s", topicFN, pulsarURL)
+	log.Printf("topicFN %s pulsarURL %s", topicFN, pulsarURL)
 
 	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b)
 	if err != nil {

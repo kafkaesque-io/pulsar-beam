@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,15 +20,6 @@ import (
 	"github.com/pulsar-beam/src/pulsardriver"
 	"github.com/pulsar-beam/src/util"
 )
-
-// A webhook broker that reads configuration from a file
-// Definitely definitely we need a database to store the webhook configuration
-// This is a prototype only.
-
-// JSONData is the request body to the webhook interface
-type JSONData struct {
-	Data string
-}
 
 // key is the hash of topic full name and pulsar url
 var webhooks = make(map[string]bool)
@@ -84,21 +77,29 @@ func NewDbHandler() {
 }
 
 // pushWebhook sends data to a webhook interface
-func pushWebhook(url, data string) (int, *http.Response) {
+func pushWebhook(url string, data []byte, headers []string) (int, *http.Response) {
 
 	client := retryablehttp.NewClient()
 	client.RetryWaitMin = 2 * time.Second
 	client.RetryWaitMax = 28 * time.Second
 	client.RetryMax = 1
 
-	body, err2 := json.Marshal(JSONData{data})
-	if err2 != nil {
-		log.Printf("webhook data marshalling error %s", err2.Error())
-		return http.StatusUnprocessableEntity, nil
+	req, err := retryablehttp.NewRequest("POST", url, data)
+	if err != nil {
+		panic(err)
 	}
 
-	res, err := client.Post(url, "application/json", body)
+	for _, h := range headers {
+		// since : is allowed in header's value
+		l := strings.SplitAfterN(h, ":", 2)
+		if len(l) == 2 {
+			headerKey := strings.TrimSpace(strings.Replace(l[0], ":", "", -1))
+			req.Header.Set(headerKey, strings.TrimSpace(l[1]))
+		}
+		//discard any misformed headers
+	}
 
+	res, err := client.Do(req)
 	if err != nil {
 		log.Printf("webhook post error %s", err.Error())
 		return http.StatusInternalServerError, nil
@@ -114,7 +115,7 @@ func toPulsar(r *http.Response) {
 		log.Printf("error missing required topic headers from webhook/function")
 		return
 	}
-	log.Printf("topicURL %s puslarURL %s", topicFN, pulsarURL)
+	log.Printf("topicURL %s pulsarURL %s", topicFN, pulsarURL)
 
 	b, err2 := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -129,8 +130,8 @@ func toPulsar(r *http.Response) {
 	}
 }
 
-func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
-	code, res := pushWebhook(url, data)
+func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, headers []string) {
+	code, res := pushWebhook(url, data, headers)
 	if (code >= 200 && code < 300) || code == http.StatusUnprocessableEntity {
 		c.Ack(msg)
 
@@ -143,7 +144,7 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url, data string) {
 
 // ConsumeLoop consumes data from Pulsar topic
 // Do not use context since go vet will puke that requires cancel invoked in the same function
-func ConsumeLoop(url, token, topic, webhookURL, subscription string) error {
+func ConsumeLoop(url, token, topic, webhookURL, subscription string, headers []string) error {
 	c := pulsardriver.GetConsumer(url, token, topic, subscription)
 	if c == nil {
 		return errors.New("Failed to create Pulsar consumer")
@@ -161,9 +162,21 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription string) error {
 			log.Println("error from consumer loop receive")
 			log.Println(err)
 		} else if msg != nil {
-			data := string(msg.Payload())
-			log.Println("Received message : ", data)
-			pushAndAck(c, msg, webhookURL, data)
+			headers = append(headers, fmt.Sprintf("PulsarMessageId:%s", msg.ID()))
+			headers = append(headers, fmt.Sprintf("PulsarPublishedTime:%s", msg.PublishTime().String()))
+			headers = append(headers, fmt.Sprintf("PulsarTopic:%s", msg.Topic()))
+			if msg.EventTime() != nil {
+				headers = append(headers, fmt.Sprintf("PulsarEventTime:%s", msg.EventTime().String()))
+			}
+			for k, v := range msg.Properties() {
+				headers = append(headers, fmt.Sprintf("PulsarProperties-%s:%s", k, v))
+			}
+
+			data := msg.Payload()
+			if json.Valid(data) {
+				headers = append(headers, "content-type:application/json")
+			}
+			pushAndAck(c, msg, webhookURL, data, headers)
 		} else {
 			return nil
 		}
@@ -180,6 +193,7 @@ func run() {
 			token := cfg.Token
 			url := cfg.PulsarURL
 			webhookURL := whCfg.URL
+			webhookHeaders := whCfg.Headers
 			// ensure random subscription name
 			subscription := util.AssignString(whCfg.Subscription, icrypto.GenTopicKey())
 			status := whCfg.WebhookStatus
@@ -188,7 +202,7 @@ func run() {
 				subscriptionSet[subscription] = true
 				if !ok {
 					log.Printf("add activated webhook for topic subscription %v", subscription)
-					go ConsumeLoop(url, token, topic, webhookURL, subscription)
+					go ConsumeLoop(url, token, topic, webhookURL, subscription, webhookHeaders)
 				}
 			}
 		}
@@ -201,7 +215,7 @@ func run() {
 			cancelConsumer(k)
 		}
 	}
-	log.Println("load webhooks", len(webhooks))
+	log.Println("load webhooks size ", len(webhooks))
 }
 
 // LoadConfig loads the entire topic documents from the database
