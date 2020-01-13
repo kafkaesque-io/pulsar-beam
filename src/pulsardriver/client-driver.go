@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/util"
@@ -80,7 +81,8 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 
 	// Create a different message to send asynchronously
 	asyncMsg := pulsar.ProducerMessage{
-		Payload: data,
+		Payload:   data,
+		EventTime: time.Now(),
 	}
 
 	p.SendAsync(ctx, asyncMsg, func(msg pulsar.ProducerMessage, err error) {

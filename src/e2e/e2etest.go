@@ -121,7 +121,8 @@ func produceMessage() string {
 
 	beamReceiverURL := "http://localhost:3000/v1/firehose"
 	sentMessage := fmt.Sprintf("hello-from-e2e-test %d", time.Now().Unix())
-	originalData := []byte(sentMessage)
+	originalData := []byte(`{"Data": "` + sentMessage + `"}`)
+	log.Println(string(originalData))
 
 	//Send to Pulsar Beam
 	req, err := http.NewRequest("POST", beamReceiverURL, bytes.NewBuffer(originalData))
