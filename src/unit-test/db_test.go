@@ -3,6 +3,7 @@ package tests
 import (
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/pulsar-beam/src/broker"
@@ -54,7 +55,7 @@ func TestMongoDbDriver(t *testing.T) {
 
 	wh := model.NewWebhookConfig("http://localhost:8089")
 	equals(t, wh.URL, "http://localhost:8089")
-	equals(t, len(wh.Subscription), 24)
+	assert(t, strings.HasPrefix(wh.Subscription, model.NonResumable), "ensure non resumable subscription")
 	wh.Subscription = "firstsubscription"
 	equals(t, wh.Subscription, "firstsubscription")
 	equals(t, wh.WebhookStatus, model.Activated)
@@ -160,7 +161,7 @@ func TestInMemoryDatabase(t *testing.T) {
 
 	wh := model.NewWebhookConfig("http://localhost:8089")
 	equals(t, wh.URL, "http://localhost:8089")
-	equals(t, len(wh.Subscription), 24)
+	assert(t, strings.HasPrefix(wh.Subscription, model.NonResumable), "ensure non resumable subscription")
 	wh.Subscription = "firstsubscription"
 	equals(t, wh.Subscription, "firstsubscription")
 	equals(t, wh.WebhookStatus, model.Activated)
@@ -256,7 +257,7 @@ func TestPulsarDbDriver(t *testing.T) {
 
 	wh := model.NewWebhookConfig("http://localhost:8089")
 	equals(t, wh.URL, "http://localhost:8089")
-	equals(t, len(wh.Subscription), 24)
+	assert(t, strings.HasPrefix(wh.Subscription, model.NonResumable), "ensure non resumable subscription")
 	wh.Subscription = "firstsubscription"
 	equals(t, wh.Subscription, "firstsubscription")
 	equals(t, wh.WebhookStatus, model.Activated)

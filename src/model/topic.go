@@ -57,6 +57,11 @@ type TopicKey struct {
 	PulsarURL     string `json:"PulsarURL"`
 }
 
+//
+const (
+	NonResumable = "NonResumable"
+)
+
 // NewTopicConfig creates a topic configuration struct.
 func NewTopicConfig(topicFullName, pulsarURL, token string) (TopicConfig, error) {
 	cfg := TopicConfig{}
@@ -79,7 +84,7 @@ func NewTopicConfig(topicFullName, pulsarURL, token string) (TopicConfig, error)
 func NewWebhookConfig(URL string) WebhookConfig {
 	cfg := WebhookConfig{}
 	cfg.URL = URL
-	cfg.Subscription = icrypto.GenTopicKey()
+	cfg.Subscription = NonResumable + icrypto.GenTopicKey()
 	cfg.WebhookStatus = Activated
 	cfg.CreatedAt = time.Now()
 	cfg.UpdatedAt = time.Now()

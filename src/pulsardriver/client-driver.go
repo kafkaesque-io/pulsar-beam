@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
 
@@ -104,8 +106,8 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 }
 
 // GetConsumer gets the matching Pulsar consumer
-func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
-	key := subscription
+func GetConsumer(url, token, topic, subscription, subscriptionKey string) pulsar.Consumer {
+	key := subscriptionKey
 	consumer := consumers[key]
 	if consumer != nil {
 		return consumer
@@ -120,6 +122,7 @@ func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
 		Topic:            topic,
 		SubscriptionName: subscription,
+		Type:             pulsar.Exclusive,
 		// ReadCompacted:    true,
 	})
 	if err != nil {
@@ -134,6 +137,9 @@ func GetConsumer(url, token, topic, subscription string) pulsar.Consumer {
 func CancelConsumer(key string) {
 	c, ok := consumers[key]
 	if ok {
+		if strings.HasPrefix(c.Subscription(), model.NonResumable) {
+			util.ReportError(c.Unsubscribe())
+		}
 		err := c.Close()
 		delete(consumers, key)
 		if err != nil {

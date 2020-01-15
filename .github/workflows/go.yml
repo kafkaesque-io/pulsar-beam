@@ -157,7 +157,7 @@ jobs:
           ls /usr/local/share/ca-certificate
           sudo update-ca-certificates
           ls /etc/ssl/certs
-      - name: Start daemon
+      - name: Start daemon and run e2e test
         env:
           PORT: 3000
           PbDbInterval: 15s

@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"strconv"
@@ -128,4 +129,9 @@ func TestThreaSafeMap(t *testing.T) {
 			broker.WriteWebhook("first" + strconv.Itoa(i))
 		}
 	}()
+}
+
+func TestReportError(t *testing.T) {
+	errorStr := "my invented error"
+	equals(t, errorStr, ReportError(errors.New(errorStr)).Error())
 }
