@@ -15,13 +15,12 @@ import (
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pulsar-beam/src/db"
-	"github.com/pulsar-beam/src/icrypto"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/pulsardriver"
 	"github.com/pulsar-beam/src/util"
 )
 
-// key is the hash of topic full name and pulsar url
+// key is the hash of topic full name and pulsar url, and subscription name
 var webhooks = make(map[string]bool)
 var whLock = sync.RWMutex{}
 
@@ -144,8 +143,8 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 
 // ConsumeLoop consumes data from Pulsar topic
 // Do not use context since go vet will puke that requires cancel invoked in the same function
-func ConsumeLoop(url, token, topic, webhookURL, subscription string, headers []string) error {
-	c := pulsardriver.GetConsumer(url, token, topic, subscription)
+func ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey string, headers []string) error {
+	c := pulsardriver.GetConsumer(url, token, topic, subscription, subscriptionKey)
 	if c == nil {
 		return errors.New("Failed to create Pulsar consumer")
 	}
@@ -194,15 +193,15 @@ func run() {
 			url := cfg.PulsarURL
 			webhookURL := whCfg.URL
 			webhookHeaders := whCfg.Headers
-			// ensure random subscription name
-			subscription := util.AssignString(whCfg.Subscription, icrypto.GenTopicKey())
+			subscription := whCfg.Subscription
+			subscriptionKey := fmt.Sprintf("%s%s", cfg.Key, subscription)
 			status := whCfg.WebhookStatus
-			ok := ReadWebhook(subscription)
+			ok := ReadWebhook(subscriptionKey)
 			if status == model.Activated {
 				subscriptionSet[subscription] = true
 				if !ok {
 					log.Printf("add activated webhook for topic subscription %v", subscription)
-					go ConsumeLoop(url, token, topic, webhookURL, subscription, webhookHeaders)
+					go ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey, webhookHeaders)
 				}
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -71,4 +72,10 @@ func AssignString(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// ReportError logs error
+func ReportError(err error) error {
+	log.Printf("error %v", err)
+	return err
 }
