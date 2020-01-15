@@ -149,7 +149,7 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey st
 		return errors.New("Failed to create Pulsar consumer")
 	}
 
-	WriteWebhook(subscription)
+	WriteWebhook(subscriptionKey)
 	ctx := context.Background()
 
 	// infinite loop to receive messages
