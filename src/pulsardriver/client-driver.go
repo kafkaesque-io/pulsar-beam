@@ -107,7 +107,7 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 
 // GetConsumer gets the matching Pulsar consumer
 func GetConsumer(url, token, topic, subscription, subscriptionKey string) pulsar.Consumer {
-	key := subscription
+	key := subscriptionKey
 	consumer := consumers[key]
 	if consumer != nil {
 		return consumer

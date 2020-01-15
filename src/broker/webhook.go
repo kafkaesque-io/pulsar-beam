@@ -184,6 +184,7 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey st
 }
 
 func run() {
+	// key is hash of topic name and pulsar url, and subscription name
 	subscriptionSet := make(map[string]bool)
 
 	for _, cfg := range LoadConfig() {
@@ -198,7 +199,7 @@ func run() {
 			status := whCfg.WebhookStatus
 			ok := ReadWebhook(subscriptionKey)
 			if status == model.Activated {
-				subscriptionSet[subscription] = true
+				subscriptionSet[subscriptionKey] = true
 				if !ok {
 					log.Printf("add activated webhook for topic subscription %v", subscription)
 					go ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey, webhookHeaders)
