@@ -75,6 +75,9 @@ func addWebhookToDb() string {
 	wh := model.NewWebhookConfig(webhookURL)
 	topicConfig.Webhooks = append(topicConfig.Webhooks, wh)
 	reqJSON, err := json.Marshal(topicConfig)
+	if err != nil {
+		log.Fatal("Topic marshalling error Error reading request. ", err)
+	}
 	log.Println("create topic and webhook with REST call")
 	req, err := http.NewRequest("POST", restURL, bytes.NewBuffer(reqJSON))
 	if err != nil {
