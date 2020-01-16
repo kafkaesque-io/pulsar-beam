@@ -64,8 +64,8 @@ RUN mkdir /root/config/
 RUN apt-get update
 RUN apt-get install -y wget
 
-RUN wget --user-agent=Mozilla -O apache-pulsar-client.deb "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-RUN wget --user-agent=Mozilla -O apache-pulsar-client-dev.deb "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
+RUN wget --user-agent=Mozilla -O apache-pulsar-client.deb "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
+RUN wget --user-agent=Mozilla -O apache-pulsar-client-dev.deb "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
 
 RUN ls ./*apache-pulsar-client*.deb
 RUN apt install -y ./apache-pulsar-client.deb
