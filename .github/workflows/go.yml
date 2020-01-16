@@ -198,4 +198,5 @@ jobs:
       - name: Build Docker Image
         run: |
           pwd
+          cat ./Dockerfile
           sudo docker build -t pulsar-beam .
