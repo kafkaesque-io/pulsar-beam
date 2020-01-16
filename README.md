@@ -1,3 +1,7 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/kafkaesque-io/pulsar-beam)](https://goreportcard.com/report/github.com/kafkaesque-io/pulsar-beam)
+[![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://golang.org/)
+[![LICENSE](https://img.shields.io/hexpm/l/pulsar.svg)](https://github.com/kafkaesque-io/pulsar-beam/blob/master/LICENSE)
+
 # Pulsar Beam
 
 ![](https://github.com/kafkaesque-io/pulsar-beam/workflows/build%20and%20test/badge.svg)
