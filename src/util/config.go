@@ -64,7 +64,7 @@ func ReadConfigFile(configFile string) {
 	//filename is the path to the json config file
 	file, err := os.Open(configFile)
 	if err != nil {
-		log.Printf("failed to load configuraiton file %s", configFile)
+		log.Printf("failed to load configuration file %s", configFile)
 		panic(err)
 	}
 	decoder := json.NewDecoder(file)

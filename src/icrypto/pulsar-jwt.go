@@ -28,7 +28,7 @@ const (
 	expireOffset  = 3600
 )
 
-var jwtRsaKeys *RSAKeyPair = nil
+var jwtRsaKeys *RSAKeyPair
 
 // NewRSAKeyPair creates a pair of RSA key for JWT token sign and verification
 func NewRSAKeyPair(privateKeyPath, publicKeyPath string) *RSAKeyPair {

@@ -25,7 +25,7 @@ func TestMongoDbDriver(t *testing.T) {
 	// 3) create a document
 	// 4) create another document with the same key; expected to fail
 	// 5) update a document
-	// 6) load/retreive all documents, iterate to find a document
+	// 6) load/retrieve all documents, iterate to find a document
 	// 7) delete a document
 	// 8) get a document to ensure it's deleted
 	NewDbWithPanic(dbTarget)
@@ -121,7 +121,7 @@ func TestMongoDbDriver(t *testing.T) {
 	resTopic2, err = mongodb2.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), DocNotFound)
-	// TODO: find a place to test Close(); need to find out depedencies.
+	// TODO: find a place to test Close(); need to find out dependencies.
 	// Comment out because there are other test cases require database.
 	// errNil(t, mongodb.Close())
 }
@@ -132,7 +132,7 @@ func TestInMemoryDatabase(t *testing.T) {
 	// 3) create a document
 	// 4) create another document with the same key; expected to fail
 	// 5) update a document
-	// 6) load/retreive all documents, iterate to find a document
+	// 6) load/retrieve all documents, iterate to find a document
 	// 7) delete a document
 	// 8) get a document to ensure it's deleted
 	inmemorydb, err := NewInMemoryHandler()
@@ -209,7 +209,7 @@ func TestInMemoryDatabase(t *testing.T) {
 	_, err = inmemorydb.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), DocNotFound)
-	// TODO: find a place to test Close(); need to find out depedencies.
+	// TODO: find a place to test Close(); need to find out dependencies.
 	// Comment out because there are other test cases require database.
 	errNil(t, inmemorydb.Close())
 }
@@ -230,7 +230,7 @@ func TestPulsarDbDriver(t *testing.T) {
 	// 3) create a document
 	// 4) create another document with the same key; expected to fail
 	// 5) update a document
-	// 6) load/retreive all documents, iterate to find a document
+	// 6) load/retrieve all documents, iterate to find a document
 	// 7) delete a document
 	// 8) get a document to ensure it's deleted
 	pulsardb, err := NewPulsarHandler()
@@ -314,7 +314,7 @@ func TestPulsarDbDriver(t *testing.T) {
 	resTopic2, err = pulsardb.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), DocNotFound)
-	// TODO: find a place to test Close(); need to find out depedencies.
+	// TODO: find a place to test Close(); need to find out dependencies.
 	// Comment out because there are other test cases require database.
 	// errNil(t, pulsardb.Close())
 }

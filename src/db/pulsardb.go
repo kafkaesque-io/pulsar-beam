@@ -62,6 +62,9 @@ func (s *PulsarHandler) Init() error {
 		MaxPendingMessages:      100,
 		BlockIfQueueFull:        true,
 	})
+	if err != nil {
+		return err
+	}
 
 	s.reader, err = s.client.CreateReader(pulsar.ReaderOptions{
 		Topic:          topicName,

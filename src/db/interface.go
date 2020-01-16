@@ -8,7 +8,7 @@ import (
 )
 
 // dbConn is a singlton of Db instance
-var dbConn Db = nil
+var dbConn Db
 
 // Crud interface specifies typical CRUD opertaions for database
 type Crud interface {

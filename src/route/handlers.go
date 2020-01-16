@@ -67,7 +67,7 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := singleDb.GetByKey(topicKey)
 	if err != nil {
-		log.Println(err)
+		log.Printf("get topic error %v", err)
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
@@ -117,6 +117,10 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		resJSON, err := json.Marshal(savedDoc)
+		if err != nil {
+			log.Printf("marshal updated topic error %v", err)
+			return
+		}
 		w.Write(resJSON)
 		return
 	}
