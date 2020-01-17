@@ -1,4 +1,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kafkaesque-io/pulsar-beam)](https://goreportcard.com/report/github.com/kafkaesque-io/pulsar-beam)
+[![CI Build](https://github.com/kafkaesque-io/pulsar-beam/workflows/ci/badge.svg
+)](https://github.com/kafkaesque-io/pulsar-beam/actions)
 [![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://golang.org/)
 [![LICENSE](https://img.shields.io/hexpm/l/pulsar.svg)](https://github.com/kafkaesque-io/pulsar-beam/blob/master/LICENSE)
 
