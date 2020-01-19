@@ -55,7 +55,7 @@ RUN apt-get install -y gcc
 RUN go build -o main ./src
 
 ######## Start a new stage from scratch #######
-FROM ubuntu:latest
+FROM ubuntu:18.04
 
 # RUN apk update
 WORKDIR /root/bin
