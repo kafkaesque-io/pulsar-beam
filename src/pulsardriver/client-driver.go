@@ -73,7 +73,7 @@ func getProducer(url, token, topic string) pulsar.Producer {
 }
 
 // SendToPulsar sends data to a Pulsar producer.
-func SendToPulsar(url, token, topic string, data []byte) error {
+func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 	p := getProducer(url, token, topic)
 	if p == nil {
 		return errors.New("Failed to create Pulsar producer")
@@ -89,20 +89,22 @@ func SendToPulsar(url, token, topic string, data []byte) error {
 	}
 	prop := map[string]string{"PulsarBeamId": id}
 	// Create a different message to send asynchronously
-	asyncMsg := pulsar.ProducerMessage{
+	message := pulsar.ProducerMessage{
 		Payload:    data,
 		EventTime:  time.Now(),
 		Properties: prop,
 	}
 
-	p.SendAsync(ctx, asyncMsg, func(msg pulsar.ProducerMessage, err error) {
-		if err != nil {
-			log.Printf("send to Pulsar err %v", err)
-			// TODO: add retry
-		}
-
-	})
-	return nil
+	if async {
+		p.SendAsync(ctx, message, func(msg pulsar.ProducerMessage, err error) {
+			if err != nil {
+				log.Printf("send to Pulsar err %v", err)
+				// TODO: add retry
+			}
+		})
+		return nil
+	}
+	return p.Send(ctx, message)
 }
 
 // GetConsumer gets the matching Pulsar consumer
@@ -122,8 +124,7 @@ func GetConsumer(url, token, topic, subscription, subscriptionKey string) pulsar
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
 		Topic:            topic,
 		SubscriptionName: subscription,
-		Type:             pulsar.Exclusive,
-		// ReadCompacted:    true,
+		Type:             pulsar.Shared,
 	})
 	if err != nil {
 		log.Printf("failed subscribe to pulsar consumer %v", err)
