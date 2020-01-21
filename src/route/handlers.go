@@ -48,7 +48,8 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("topicFN %s pulsarURL %s", topicFN, pulsarURL)
 
-	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b, false)
+	pulsarAsync := r.URL.Query().Get("mode") == "async"
+	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b, pulsarAsync)
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
