@@ -111,10 +111,9 @@ func pushWebhook(url string, data []byte, headers []string) (int, *http.Response
 func toPulsar(r *http.Response) {
 	token, topicFN, pulsarURL, err := util.ReceiverHeader(&r.Header)
 	if err {
-		log.Printf("error missing required topic headers from webhook/function")
 		return
 	}
-	log.Printf("topicURL %s pulsarURL %s", topicFN, pulsarURL)
+	// log.Printf("topicURL %s pulsarURL %s", topicFN, pulsarURL)
 
 	b, err2 := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -134,7 +133,9 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 	if (code >= 200 && code < 300) || code == http.StatusUnprocessableEntity {
 		c.Ack(msg)
 
-		go toPulsar(res)
+		if code >= 200 && code < 300 {
+			go toPulsar(res)
+		}
 	} else {
 		// replying on Pulsar to redeliver
 		log.Println("failed to push to webhook")

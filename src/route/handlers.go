@@ -26,6 +26,29 @@ func Init() {
 	superRoles = strings.Split(superRoleStr, ",")
 }
 
+// TokenSubjectHandler issues new token
+func TokenSubjectHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	subject, ok := vars["sub"]
+	if !ok {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	if util.StrContains(superRoles, util.AssignString(r.Header.Get("injectedSubs"), "BOGUSROLE")) {
+		tokenString, err := util.JWTAuth.GenerateToken(subject)
+		if err != nil {
+			util.ResponseErrorJSON(errors.New("failed to generate token"), w, http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(tokenString))
+		}
+		return
+	}
+	util.ResponseErrorJSON(errors.New("incorrect subject"), w, http.StatusUnauthorized)
+	return
+}
+
 // StatusPage replies with basic status code
 func StatusPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -200,10 +223,5 @@ func VerifySubject(topicFN, tokenSub string) bool {
 	}
 	subjects := append(superRoles, tenant)
 
-	for _, elem := range subjects {
-		if tokenSub == elem {
-			return true
-		}
-	}
-	return false
+	return util.StrContains(subjects, tokenSub)
 }
