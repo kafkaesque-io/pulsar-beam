@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sort"
 	"strings"
 )
 
@@ -83,6 +82,10 @@ func ReportError(err error) error {
 
 // StrContains check if a string is contained in an array of string
 func StrContains(strs []string, str string) bool {
-	index := sort.SearchStrings(strs, str)
-	return index < len(strs) && strs[index] == str
+	for _, v := range strs {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

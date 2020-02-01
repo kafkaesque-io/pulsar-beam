@@ -11,6 +11,9 @@ const Receiver = "receiver"
 // Hybrid mode both broker and webserver
 const Hybrid = "hybrid"
 
+// TokenServer mode serves as a token server only
+const TokenServer = "tokenserver"
+
 // Rest mode provides a Rest API for webhook management
 const Rest = "rest"
 
@@ -21,7 +24,8 @@ func IsBrokerRequired(mode *string) bool {
 
 // IsHTTPRouterRequired check whether to initialize http router
 func IsHTTPRouterRequired(mode *string) bool {
-	return *mode == Receiver || *mode == Rest || *mode == Hybrid
+	modes := []string{Hybrid, Receiver, Rest, TokenServer}
+	return StrContains(modes, *mode)
 }
 
 // IsBroker check if the mode is broker
@@ -31,5 +35,6 @@ func IsBroker(mode *string) bool {
 
 // IsValidMode checks if the mode is supported
 func IsValidMode(mode *string) bool {
-	return *mode != Broker && *mode != Hybrid && *mode != Receiver && *mode != Rest
+	modes := []string{Broker, Hybrid, Receiver, Rest, TokenServer}
+	return StrContains(modes, *mode)
 }

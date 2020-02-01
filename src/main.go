@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/pulsar-beam/src/broker"
 	"github.com/pulsar-beam/src/route"
@@ -14,11 +15,12 @@ import (
 var mode = flag.String("mode", "hybrid", "server running mode")
 
 func main() {
+	exit := make(chan bool) // future use to exit the main program if in broker only mode
 	util.Init()
 
 	flag.Parse()
 	log.Println("start server mode ", *mode)
-	if util.IsValidMode(mode) {
+	if !util.IsValidMode(mode) {
 		log.Panic("Unsupported server mode")
 	}
 
@@ -43,5 +45,9 @@ func main() {
 	}
 
 	for util.IsBroker(mode) {
+		select {
+		case <-exit:
+			os.Exit(2)
+		}
 	}
 }
