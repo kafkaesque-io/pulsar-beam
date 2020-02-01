@@ -41,6 +41,8 @@ func GetEffectiveRoutes(mode *string) Routes {
 		return append(ReceiverRoutes, RestRoutes...)
 	case util.Receiver:
 		return ReceiverRoutes
+	case util.TokenServer:
+		return TokenServerRoutes
 	default:
 		return RestRoutes
 	}

@@ -19,6 +19,17 @@ type Route struct {
 // Routes list of HTTP Routes
 type Routes []Route
 
+// TokenServerRoutes definition
+var TokenServerRoutes = Routes{
+	Route{
+		"token server",
+		http.MethodGet,
+		"/subject",
+		TokenSubjectHandler,
+		middleware.AuthVerifyJWT,
+	},
+}
+
 // ReceiverRoutes definition
 var ReceiverRoutes = Routes{
 	Route{

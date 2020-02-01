@@ -68,26 +68,39 @@ func TestEffectiveRoutes(t *testing.T) {
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == restRoutesLen, "check rest required routes")
 	mode = "receiver"
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == receiverRoutesLen, "check receiver required routes")
+	mode = "tokenserver"
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == len(route.TokenServerRoutes), "check receiver required routes")
 }
 
 func TestMainControlMode(t *testing.T) {
 	mode := "receiver"
 	assert(t, IsBroker(&mode) == false, "")
+	assert(t, IsValidMode(&mode), "")
 	mode = "broker"
 	assert(t, IsBroker(&mode), "")
 	assert(t, IsBrokerRequired(&mode), "")
+	assert(t, IsValidMode(&mode), "")
 
 	mode = "hybrid"
 	assert(t, IsHTTPRouterRequired(&mode), "")
 	assert(t, IsBrokerRequired(&mode), "")
+	assert(t, IsValidMode(&mode), "")
 
 	mode = "rest"
 	assert(t, IsHTTPRouterRequired(&mode), "")
 	assert(t, IsBrokerRequired(&mode) == false, "")
 	assert(t, IsBroker(&mode) == false, "")
+	assert(t, IsValidMode(&mode), "")
+
+	mode = "tokenserver"
+	assert(t, IsHTTPRouterRequired(&mode), "")
+	assert(t, IsBrokerRequired(&mode) == false, "")
+	assert(t, IsBroker(&mode) == false, "")
+	assert(t, IsValidMode(&mode), "")
 
 	mode = "oops"
-	assert(t, IsValidMode(&mode), "test invalid mode")
+	assert(t, !IsValidMode(&mode), "test invalid mode")
+	assert(t, !IsHTTPRouterRequired(&mode), "test invalid HTTPRouterRequired mode")
 }
 
 func TestReceiverHeader(t *testing.T) {
@@ -134,4 +147,10 @@ func TestThreaSafeMap(t *testing.T) {
 func TestReportError(t *testing.T) {
 	errorStr := "my invented error"
 	equals(t, errorStr, ReportError(errors.New(errorStr)).Error())
+}
+
+func TestStrContains(t *testing.T) {
+	assert(t, StrContains([]string{"foo", "bar", "flying"}, "foo"), "")
+	assert(t, !StrContains([]string{"foo", "bar", "flying"}, "foobar"), "")
+	assert(t, !StrContains([]string{}, "foobar"), "")
 }

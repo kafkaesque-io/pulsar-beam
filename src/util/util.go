@@ -79,3 +79,13 @@ func ReportError(err error) error {
 	log.Printf("error %v", err)
 	return err
 }
+
+// StrContains check if a string is contained in an array of string
+func StrContains(strs []string, str string) bool {
+	for _, v := range strs {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
