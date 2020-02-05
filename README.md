@@ -2,11 +2,10 @@
 [![CI Build](https://github.com/kafkaesque-io/pulsar-beam/workflows/ci/badge.svg
 )](https://github.com/kafkaesque-io/pulsar-beam/actions)
 [![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://golang.org/)
+[![codecov](https://codecov.io/gh/kafkaesque-io/pulsar-beam/branch/master/graph/badge.svg)](https://codecov.io/gh/kafkaesque-io/pulsar-beam)
 [![LICENSE](https://img.shields.io/hexpm/l/pulsar.svg)](https://github.com/kafkaesque-io/pulsar-beam/blob/master/LICENSE)
 
 # Pulsar Beam
-
-![](https://github.com/kafkaesque-io/pulsar-beam/workflows/build%20and%20test/badge.svg)
 
 Beam is a http based streaming and queueing system that is backed up by Apache Pulsar.
 
