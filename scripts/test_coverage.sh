@@ -24,10 +24,12 @@ echo $ALL_PKGS
 
 cd $DIR/../src/unit-test
 
-go test ./... -coverpkg=$ALL_PKGS -coverprofile coverage.out
-go tool cover -func coverage.out > /tmp/coverage.txt
+go test ./... -coverpkg=$ALL_PKGS -covermode=count -coverprofile coverage.out
+# to be uploaded to covercov
+cp coverage.out $DIR/../coverage.txt
+go tool cover -func coverage.out > /tmp/coverage2.txt
 
-coverPercent=$(cat /tmp/coverage.txt | grep total: | awk '{print $3}' | sed 's/%$//g')
+coverPercent=$(cat /tmp/coverage2.txt | grep total: | awk '{print $3}' | sed 's/%$//g')
 
 echo "Current test coverage is at ${coverPercent}%"
 echo "TODO add code coverage verdict"
