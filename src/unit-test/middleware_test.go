@@ -82,6 +82,17 @@ func TestAuthHeaderRequiredMiddleware(t *testing.T) {
 	equals(t, http.StatusOK, rr.Code)
 }
 
+func TestNoAuthMiddleware(t *testing.T) {
+	handlerTest := NoAuth(http.HandlerFunc(mockHandler))
+
+	req, err := http.NewRequest(http.MethodGet, "http://test", nil)
+	errNil(t, err)
+
+	rr := httptest.NewRecorder()
+	handlerTest.ServeHTTP(rr, req)
+	equals(t, http.StatusOK, rr.Code)
+}
+
 func TestRateLimitMiddleware(t *testing.T) {
 	handlerTest := LimitRate(http.HandlerFunc(mockHandler))
 

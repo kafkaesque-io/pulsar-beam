@@ -36,6 +36,10 @@ func NewRouter(mode *string) *mux.Router {
 
 // GetEffectiveRoutes gets effective routes
 func GetEffectiveRoutes(mode *string) Routes {
+	return append(PrometheusRoute, getRoutes(mode)...)
+}
+
+func getRoutes(mode *string) Routes {
 	switch *mode {
 	case util.Hybrid:
 		return append(ReceiverRoutes, RestRoutes...)
