@@ -56,20 +56,21 @@ func TestLoadConfigFile(t *testing.T) {
 	ReadConfigFile("../" + DefaultConfigFile)
 	config := GetConfig()
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")
-	assert(t, config.PbDbType == "mongo", "default config setting")
+	assert(t, config.PbDbType == "inmemory", "default config setting")
 }
 
 func TestEffectiveRoutes(t *testing.T) {
 	receiverRoutesLen := len(route.ReceiverRoutes)
 	restRoutesLen := len(route.RestRoutes)
+	prometheusLen := len(route.PrometheusRoute)
 	mode := "hybrid"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+restRoutesLen), "check hybrid required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+restRoutesLen+prometheusLen), "check hybrid required routes")
 	mode = "rest"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == restRoutesLen, "check rest required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (restRoutesLen+prometheusLen), "check rest required routes")
 	mode = "receiver"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == receiverRoutesLen, "check receiver required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+prometheusLen), "check receiver required routes")
 	mode = "tokenserver"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == len(route.TokenServerRoutes), "check receiver required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check receiver required routes")
 }
 
 func TestMainControlMode(t *testing.T) {

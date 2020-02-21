@@ -48,6 +48,13 @@ func AuthHeaderRequired(next http.Handler) http.Handler {
 	})
 }
 
+// NoAuth bypasses the auth middleware
+func NoAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+	})
+}
+
 // LimitRate rate limites against http handler
 // use semaphore as a simple rate limiter
 func LimitRate(next http.Handler) http.Handler {
