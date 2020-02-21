@@ -56,7 +56,7 @@ func TestLoadConfigFile(t *testing.T) {
 	ReadConfigFile("../" + DefaultConfigFile)
 	config := GetConfig()
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")
-	assert(t, config.PbDbType == "inmemory", "default config setting")
+	assert(t, config.PbDbType == "mongo", "default config setting")
 }
 
 func TestEffectiveRoutes(t *testing.T) {
