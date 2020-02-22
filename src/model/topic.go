@@ -156,7 +156,6 @@ func GetSubscriptionType(subType string) (pulsar.SubscriptionType, error) {
 // Explicit validation has no dependency and very specific.
 func ValidateWebhookConfig(whs []WebhookConfig) error {
 	for _, wh := range whs {
-		fmt.Println(wh.URL, wh.SubscriptionType)
 		if !isURL(wh.URL) {
 			return fmt.Errorf("not a URL %s", wh.URL)
 		}

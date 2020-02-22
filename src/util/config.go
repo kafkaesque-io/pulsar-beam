@@ -1,11 +1,16 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
 
+	"unicode"
+
+	"github.com/ghodss/yaml"
 	"github.com/pulsar-beam/src/icrypto"
 )
 
@@ -60,17 +65,23 @@ func Init() {
 
 // ReadConfigFile reads configuration file.
 func ReadConfigFile(configFile string) {
-
-	//filename is the path to the json config file
-	file, err := os.Open(configFile)
+	fileBytes, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.Printf("failed to load configuration file %s", configFile)
 		panic(err)
 	}
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&Config)
-	if err != nil {
-		panic(err)
+
+	if hasJSONPrefix(fileBytes) {
+		log.Printf("asdfasdfasdf")
+		err = json.Unmarshal(fileBytes, &Config)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		err = yaml.Unmarshal(fileBytes, &Config)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// Next section allows env variable overwrites config file value
@@ -96,4 +107,16 @@ func ReadConfigFile(configFile string) {
 //GetConfig returns a reference to the Configuration
 func GetConfig() *Configuration {
 	return &Config
+}
+
+var jsonPrefix = []byte("{")
+
+func hasJSONPrefix(buf []byte) bool {
+	return hasPrefix(buf, jsonPrefix)
+}
+
+// Return true if the first non-whitespace bytes in buf is prefix.
+func hasPrefix(buf []byte, prefix []byte) bool {
+	trim := bytes.TrimLeftFunc(buf, unicode.IsSpace)
+	return bytes.HasPrefix(trim, prefix)
 }
