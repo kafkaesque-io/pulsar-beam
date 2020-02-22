@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -49,8 +48,7 @@ func TestTopicHandler(t *testing.T) {
 
 	key, err := model.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
-	equals(t, key, fmt.Sprintf("%s-%s", topic.PulsarURL, topic.TopicFullName))
-	//equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26")
+	equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26")
 
 	// test create a new topic
 	req, err := http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))

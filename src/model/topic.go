@@ -134,7 +134,6 @@ func GetInitialPosition(pos string) (pulsar.InitialPosition, error) {
 
 // GetSubscriptionType converts string based subscription type to Pulsar subscription type
 func GetSubscriptionType(subType string) (pulsar.SubscriptionType, error) {
-	fmt.Println(subType)
 	switch strings.ToLower(subType) {
 	case "exclusive", "":
 		return pulsar.Exclusive, nil
@@ -145,7 +144,6 @@ func GetSubscriptionType(subType string) (pulsar.SubscriptionType, error) {
 	case "failover":
 		return pulsar.Failover, nil
 	default:
-		fmt.Println("in ddeeefault")
 		return -1, fmt.Errorf("unsupported subscription type %s", subType)
 	}
 }
