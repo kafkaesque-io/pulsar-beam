@@ -102,7 +102,7 @@ func addWebhookToDb() string {
 }
 
 func deleteWebhook(key string) {
-	log.Println("delete topic and webhook with REST call")
+	log.Printf("delete topic and webhook with REST call with key %s\n", key)
 	req, err := http.NewRequest("DELETE", restURL+"/"+key, nil)
 	errNil(err)
 

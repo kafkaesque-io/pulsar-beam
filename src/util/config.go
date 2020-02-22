@@ -72,7 +72,6 @@ func ReadConfigFile(configFile string) {
 	}
 
 	if hasJSONPrefix(fileBytes) {
-		log.Printf("asdfasdfasdf")
 		err = json.Unmarshal(fileBytes, &Config)
 		if err != nil {
 			panic(err)

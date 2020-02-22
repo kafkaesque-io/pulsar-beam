@@ -110,7 +110,7 @@ func GetKeyFromNames(name, url string) (string, error) {
 	if !re.MatchString(url) {
 		return "", fmt.Errorf("incorrect pulsar url format %s", url)
 	}
-	return fmt.Sprintf("%s-%s", url, name), nil
+	return GenKey(name, url), nil
 }
 
 // GenKey generates a unique key based on pulsar url and topic full name

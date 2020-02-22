@@ -21,6 +21,7 @@
 
 coverage.out
 cover.out
+coverage.txt
 
 # build artifacts
 main
