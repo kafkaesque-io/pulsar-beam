@@ -108,7 +108,7 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 }
 
 // GetConsumer gets the matching Pulsar consumer
-func GetConsumer(url, token, topic, subscription, subscriptionKey string) pulsar.Consumer {
+func GetConsumer(url, token, topic, subscription, subscriptionKey string, subType pulsar.SubscriptionType, pos pulsar.InitialPosition) pulsar.Consumer {
 	key := subscriptionKey
 	consumer := consumers[key]
 	if consumer != nil {
@@ -122,9 +122,10 @@ func GetConsumer(url, token, topic, subscription, subscriptionKey string) pulsar
 
 	var err error
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
-		Topic:            topic,
-		SubscriptionName: subscription,
-		Type:             pulsar.Shared,
+		Topic:               topic,
+		SubscriptionName:    subscription,
+		SubscriptionInitPos: pos,
+		Type:                subType,
 	})
 	if err != nil {
 		log.Printf("failed subscribe to pulsar consumer %v", err)

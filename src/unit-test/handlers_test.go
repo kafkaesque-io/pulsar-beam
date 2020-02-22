@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -48,7 +49,8 @@ func TestTopicHandler(t *testing.T) {
 
 	key, err := model.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
-	equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26")
+	equals(t, key, fmt.Sprintf("%s-%s", topic.PulsarURL, topic.TopicFullName))
+	//equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26")
 
 	// test create a new topic
 	req, err := http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
@@ -139,4 +141,44 @@ func TestSubjectMatch(t *testing.T) {
 	assert(t, VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
 	assert(t, VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
 	assert(t, !VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "myadmin"), "")
+}
+
+// test Topic modelling
+func TestTopicConfig(t *testing.T) {
+	token := "someformoftesttoken"
+	_, err := model.NewTopicConfig("webhookTopic", "http://useast1.gcp.kafkaesque.io:6651", token)
+	assert(t, err != nil, "")
+
+	topic, err := model.NewTopicConfig("webhookTopic", "pulsar+ssl://useast1.gcp.kafkaesque.io:6651", token)
+	errNil(t, err)
+	equals(t, 0, len(topic.Webhooks))
+	topic.Webhooks = []model.WebhookConfig{
+		model.NewWebhookConfig("http://localhost:9000/webhook"),
+		model.NewWebhookConfig("http://localhost:9000/webhook2"),
+	}
+	_, err = model.ValidateTopicConfig(topic)
+	errNil(t, err)
+	topic.Webhooks[0].SubscriptionType = "selective"
+	equals(t, 2, len(topic.Webhooks))
+	_, err = model.ValidateTopicConfig(topic)
+	assert(t, err != nil, "")
+
+	topic.Webhooks[0].SubscriptionType = "shared"
+	topic.Webhooks[1].Subscription = ""
+	equals(t, "", topic.Webhooks[1].Subscription)
+	_, err = model.ValidateTopicConfig(topic)
+	assert(t, err != nil, "")
+
+	topic.Webhooks[1].Subscription = "newsubname"
+	_, err = model.ValidateTopicConfig(topic)
+	errNil(t, err)
+
+	topic.Webhooks[1].InitialPosition = "top"
+	equals(t, "latest", topic.Webhooks[0].InitialPosition)
+	_, err = model.ValidateTopicConfig(topic)
+	assert(t, err != nil, "")
+
+	topic.Webhooks[1].InitialPosition = "earliest"
+	_, err = model.ValidateTopicConfig(topic)
+	errNil(t, err)
 }

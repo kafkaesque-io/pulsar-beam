@@ -122,6 +122,11 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, err = model.ValidateTopicConfig(doc); err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+
 	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -217,8 +222,8 @@ func VerifySubject(topicFN, tokenSub string) bool {
 		return false
 	}
 	tenant := parts[2]
-	log.Printf(" auth verify tenant %s token sub %s", tenant, tokenSub)
 	if len(tenant) < 1 {
+		log.Printf(" auth verify tenant %s token sub %s", tenant, tokenSub)
 		return false
 	}
 	subjects := append(superRoles, tenant)
