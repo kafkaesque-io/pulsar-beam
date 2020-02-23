@@ -161,13 +161,13 @@ func produceMessage() string {
 	return sentMessage
 }
 
-func consumeToVerify(verifyStr string) {
-	log.Println("Pulsar Consumer")
+func subscribe() (pulsar.Client, pulsar.Consumer) {
+	subscriptionName := "my-subscription"
+	log.Println("Pulsar Consumer subscribe to %s", subscriptionName)
 
 	// Configuration variables pertaining to this consumer
 	trustStore := util.AssignString(os.Getenv("TrustStore"), "/etc/ssl/certs/ca-bundle.crt")
 	log.Printf("trust store %v", trustStore)
-	subscriptionName := "my-subscription"
 
 	token := pulsar.NewAuthenticationToken(pulsarToken)
 
@@ -177,19 +177,18 @@ func consumeToVerify(verifyStr string) {
 		Authentication:        token,
 		TLSTrustCertsFilePath: trustStore,
 	})
-
 	errNil(err)
-	defer client.Close()
 
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
 		Topic:            functionSinkTopic,
 		SubscriptionName: subscriptionName,
-		SubscriptionInitPos: pulsar.Earliest,
+		SubscriptionInitPos: pulsar.Latest,
 	})
-
 	errNil(err)
-	defer consumer.Close()
+	return client, consumer
+}
 
+func consumeToVerify(consumer pulsar.Consumer, verifyStr string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 181*time.Second)
 	defer cancel()
 
@@ -210,6 +209,10 @@ func consumeToVerify(verifyStr string) {
 
 func main() {
 
+	client, consumer := subscribe()
+	defer consumer.Close()
+	defer client.Close()
+
 	key := addWebhookToDb()
 	log.Println(key)
 	sentStr := produceMessage()
@@ -218,6 +221,6 @@ func main() {
 	time.AfterFunc(181*time.Second, func() {
 		os.Exit(2)
 	})
-	consumeToVerify(sentStr)
+	consumeToVerify(consumer, sentStr)
 	deleteWebhook(key)
 }
