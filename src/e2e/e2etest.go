@@ -75,6 +75,7 @@ func addWebhookToDb() string {
 	errNil(err)
 
 	wh := model.NewWebhookConfig(webhookURL)
+	wh.InitialPosition = "earliest"
 	topicConfig.Webhooks = append(topicConfig.Webhooks, wh)
 	reqJSON, err := json.Marshal(topicConfig)
 	if err != nil {
