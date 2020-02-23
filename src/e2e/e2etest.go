@@ -163,7 +163,7 @@ func produceMessage() string {
 
 func subscribe() (pulsar.Client, pulsar.Consumer) {
 	subscriptionName := "my-subscription"
-	log.Println("Pulsar Consumer subscribe to %s", subscriptionName)
+	log.Printf("Pulsar Consumer subscribe to %s\n", subscriptionName)
 
 	// Configuration variables pertaining to this consumer
 	trustStore := util.AssignString(os.Getenv("TrustStore"), "/etc/ssl/certs/ca-bundle.crt")
