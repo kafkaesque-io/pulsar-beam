@@ -77,6 +77,11 @@ func addWebhookToDb() string {
 	wh := model.NewWebhookConfig(webhookURL)
 	wh.InitialPosition = "earliest"
 	topicConfig.Webhooks = append(topicConfig.Webhooks, wh)
+
+    if _, err = model.ValidateTopicConfig(topicConfig); err != nil{
+		log.Fatal("Invalid topic config ", err)
+	}
+
 	reqJSON, err := json.Marshal(topicConfig)
 	if err != nil {
 		log.Fatal("Topic marshalling error Error reading request. ", err)
@@ -179,6 +184,7 @@ func consumeToVerify(verifyStr string) {
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
 		Topic:            functionSinkTopic,
 		SubscriptionName: subscriptionName,
+		SubscriptionInitPos: pulsar.Earliest,
 	})
 
 	errNil(err)
