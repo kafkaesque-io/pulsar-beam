@@ -43,6 +43,8 @@ func init() {
 	restAPIToken = getEnvPanic("REST_API_TOKEN")
 	webhookURL = getEnvPanic("WEBHOOK2_URL")
 	functionSinkTopic = getEnvPanic("FN_SINK_TOPIC")
+
+	log.Printf("%s\n%s\n%s\n%s\n", pulsarURL, webhookTopic, webhookURL, functionSinkTopic)
 }
 
 func getEnvPanic(key string) string {
@@ -98,6 +100,7 @@ func addWebhookToDb() string {
 
 	log.Printf("post call to rest API statusCode %d", resp.StatusCode)
 	eval(resp.StatusCode == 201, "expected receiver status code is 201")
+	log.Println(topicConfig)
 	return topicConfig.Key
 }
 
