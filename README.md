@@ -58,7 +58,7 @@ $ golint ./...
 ```
 
 ### How to run 
-The steps how to start the web server.
+The steps to start the web server.
 ```bash
 $ cd src
 $ go run main.go
