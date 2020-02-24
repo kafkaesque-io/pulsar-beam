@@ -116,6 +116,8 @@ jobs:
         with :
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
+          yml: ./.codecov.yml
+          fail_ci_fi_error: true
 
   e2e_test:
     name: e2e_test

@@ -104,7 +104,7 @@ func pushWebhook(url string, data []byte, headers []string) (int, *http.Response
 		return http.StatusInternalServerError, nil
 	}
 
-	log.Println(res.StatusCode)
+	log.Printf("webhook endpoint resp status code %d", res.StatusCode)
 	return res.StatusCode, res
 }
 
@@ -144,10 +144,19 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 
 // ConsumeLoop consumes data from Pulsar topic
 // Do not use context since go vet will puke that requires cancel invoked in the same function
-func ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey string, headers []string) error {
-	c := pulsardriver.GetConsumer(url, token, topic, subscription, subscriptionKey)
-	if c == nil {
-		return errors.New("Failed to create Pulsar consumer")
+func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookConfig) error {
+	headers := whCfg.Headers
+	subType, err := model.GetSubscriptionType(whCfg.SubscriptionType)
+	if err != nil {
+		return err
+	}
+	pos, err := model.GetInitialPosition(whCfg.InitialPosition)
+	if err != nil {
+		return err
+	}
+	c, err := pulsardriver.GetConsumer(url, token, topic, whCfg.Subscription, subscriptionKey, subType, pos)
+	if err != nil {
+		return fmt.Errorf("Failed to create Pulsar subscription %v", err)
 	}
 
 	WriteWebhook(subscriptionKey)
@@ -156,11 +165,9 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey st
 	// infinite loop to receive messages
 	// TODO receive can starve stop channel if it waits for the next message indefinitely
 	for {
-		var msg pulsar.Message
 		msg, err := c.Receive(ctx)
 		if err != nil {
-			log.Println("error from consumer loop receive")
-			log.Println(err)
+			log.Printf("error from consumer loop receive: %v\n", err)
 		} else if msg != nil {
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%s", msg.ID()))
 			headers = append(headers, fmt.Sprintf("PulsarPublishedTime:%s", msg.PublishTime().String()))
@@ -176,7 +183,7 @@ func ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey st
 			if json.Valid(data) {
 				headers = append(headers, "content-type:application/json")
 			}
-			pushAndAck(c, msg, webhookURL, data, headers)
+			pushAndAck(c, msg, whCfg.URL, data, headers)
 		} else {
 			return nil
 		}
@@ -193,17 +200,14 @@ func run() {
 			topic := cfg.TopicFullName
 			token := cfg.Token
 			url := cfg.PulsarURL
-			webhookURL := whCfg.URL
-			webhookHeaders := whCfg.Headers
-			subscription := whCfg.Subscription
-			subscriptionKey := fmt.Sprintf("%s%s", cfg.Key, subscription)
+			subscriptionKey := fmt.Sprintf("%s%s", cfg.Key, whCfg.Subscription)
 			status := whCfg.WebhookStatus
 			ok := ReadWebhook(subscriptionKey)
 			if status == model.Activated {
 				subscriptionSet[subscriptionKey] = true
 				if !ok {
-					log.Printf("add activated webhook for topic subscription %v", subscription)
-					go ConsumeLoop(url, token, topic, webhookURL, subscription, subscriptionKey, webhookHeaders)
+					log.Printf("add activated webhook for topic subscription %v", subscriptionKey)
+					go ConsumeLoop(url, token, topic, subscriptionKey, whCfg)
 				}
 			}
 		}

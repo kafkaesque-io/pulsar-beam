@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/zstd v1.4.4 // indirect
 	github.com/apache/pulsar/pulsar-client-go v0.0.0-20190828080225-cc746322d51c
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/hashicorp/go-retryablehttp v0.6.4

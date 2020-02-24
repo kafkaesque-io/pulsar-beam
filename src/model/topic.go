@@ -4,9 +4,14 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"github.com/pulsar-beam/src/icrypto"
+	"fmt"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/pulsar-beam/src/icrypto"
 )
 
 // Status can be used for webhook status
@@ -26,13 +31,15 @@ const (
 
 // WebhookConfig - a configuration for webhook
 type WebhookConfig struct {
-	URL           string
-	Headers       []string
-	Subscription  string
-	WebhookStatus Status
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	DeletedAt     time.Time
+	URL              string    `json:"url"`
+	Headers          []string  `json:"headers"`
+	Subscription     string    `json:"subscription"`
+	SubscriptionType string    `json:"subscriptionType"`
+	InitialPosition  string    `json:"initialPosition"`
+	WebhookStatus    Status    `json:"webhookStatus"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+	DeletedAt        time.Time `json:"deletedAt"`
 }
 
 //TODO add state of Webhook replies
@@ -86,20 +93,24 @@ func NewWebhookConfig(URL string) WebhookConfig {
 	cfg.URL = URL
 	cfg.Subscription = NonResumable + icrypto.GenTopicKey()
 	cfg.WebhookStatus = Activated
+	cfg.SubscriptionType = "exclusive"
+	cfg.InitialPosition = "latest"
 	cfg.CreatedAt = time.Now()
 	cfg.UpdatedAt = time.Now()
 	return cfg
 }
 
 // GetKeyFromNames generate topic key based on topic full name and pulsar url
-func GetKeyFromNames(name, url string) (string, error) {
+func GetKeyFromNames(topicFullName, pulsarURL string) (string, error) {
+	url := strings.TrimSpace(pulsarURL)
+	name := strings.TrimSpace(topicFullName)
 	if url == "" || name == "" {
 		return "", errors.New("missing PulsarURL or TopicFullName")
 	}
 
-	urlParts := strings.Split(url, ":")
-	if len(urlParts) < 3 {
-		return "", errors.New("incorrect pulsar url format")
+	re := regexp.MustCompile(`^(pulsar|pulsar\+ssl)?:\/\/[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*(:[0-9]{0,6})?$`)
+	if !re.MatchString(url) {
+		return "", fmt.Errorf("incorrect pulsar url format %s", url)
 	}
 	return GenKey(name, url), nil
 }
@@ -109,4 +120,69 @@ func GenKey(topicFullName, pulsarURL string) string {
 	h := sha1.New()
 	h.Write([]byte(topicFullName + pulsarURL))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// GetInitialPosition returns the initial position for subscription
+func GetInitialPosition(pos string) (pulsar.InitialPosition, error) {
+	switch strings.ToLower(pos) {
+	case "latest", "":
+		return pulsar.Latest, nil
+	case "earliest":
+		return pulsar.Earliest, nil
+	default:
+		return -1, fmt.Errorf("invalid subscription initial position %s", pos)
+	}
+}
+
+// GetSubscriptionType converts string based subscription type to Pulsar subscription type
+func GetSubscriptionType(subType string) (pulsar.SubscriptionType, error) {
+	switch strings.ToLower(subType) {
+	case "exclusive", "":
+		return pulsar.Exclusive, nil
+	case "shared":
+		return pulsar.Shared, nil
+	case "keyshared":
+		return pulsar.KeyShared, nil
+	case "failover":
+		return pulsar.Failover, nil
+	default:
+		return -1, fmt.Errorf("unsupported subscription type %s", subType)
+	}
+}
+
+// ValidateWebhookConfig validates WebhookConfig object
+// I'd write explicit validation code rather than any off the shelf library,
+// which are just DSL and sometime these library just like fit square peg in a round hole.
+// Explicit validation has no dependency and very specific.
+func ValidateWebhookConfig(whs []WebhookConfig) error {
+	for _, wh := range whs {
+		if !isURL(wh.URL) {
+			return fmt.Errorf("not a URL %s", wh.URL)
+		}
+		if _, err := GetSubscriptionType(wh.SubscriptionType); err != nil {
+			return err
+		}
+		if strings.TrimSpace(wh.Subscription) == "" {
+			return fmt.Errorf("subscription name is missing")
+		}
+		if _, err := GetInitialPosition(wh.InitialPosition); err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
+// ValidateTopicConfig validates the TopicConfig and returns the key to identify this topic
+func ValidateTopicConfig(top TopicConfig) (string, error) {
+	if err := ValidateWebhookConfig(top.Webhooks); err != nil {
+		return "", err
+	}
+
+	return GetKeyFromNames(top.TopicFullName, top.PulsarURL)
+}
+
+func isURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }

@@ -57,6 +57,11 @@ func TestLoadConfigFile(t *testing.T) {
 	config := GetConfig()
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")
 	assert(t, config.PbDbType == "mongo", "default config setting")
+
+	ReadConfigFile("../../config/pulsar_beam.yml")
+	config2 := GetConfig()
+	assert(t, config2.PORT == "9876543", "config value overwritteen by env")
+	assert(t, config2.PbDbType == "inmemory", "default config setting")
 }
 
 func TestEffectiveRoutes(t *testing.T) {

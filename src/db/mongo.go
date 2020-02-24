@@ -155,6 +155,7 @@ func (s *MongoDb) Load() ([]*model.TopicConfig, error) {
 			log.Println("failed to decode document ", err)
 		} else {
 			results = append(results, &ele)
+			log.Printf("from mongo %s %s %s", ele.TopicFullName, ele.PulsarURL, ele.Webhooks[0].URL)
 		}
 	}
 

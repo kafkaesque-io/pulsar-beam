@@ -73,7 +73,13 @@ func addWebhookToDb() string {
 	errNil(err)
 
 	wh := model.NewWebhookConfig(webhookURL)
+	wh.InitialPosition = "earliest"
 	topicConfig.Webhooks = append(topicConfig.Webhooks, wh)
+
+    if _, err = model.ValidateTopicConfig(topicConfig); err != nil{
+		log.Fatal("Invalid topic config ", err)
+	}
+
 	reqJSON, err := json.Marshal(topicConfig)
 	if err != nil {
 		log.Fatal("Topic marshalling error Error reading request. ", err)
@@ -98,11 +104,12 @@ func addWebhookToDb() string {
 
 	log.Printf("post call to rest API statusCode %d", resp.StatusCode)
 	eval(resp.StatusCode == 201, "expected receiver status code is 201")
+	log.Println(topicConfig)
 	return topicConfig.Key
 }
 
 func deleteWebhook(key string) {
-	log.Println("delete topic and webhook with REST call")
+	log.Printf("delete topic and webhook with REST call with key %s\n", key)
 	req, err := http.NewRequest("DELETE", restURL+"/"+key, nil)
 	errNil(err)
 
@@ -152,13 +159,13 @@ func produceMessage() string {
 	return sentMessage
 }
 
-func consumeToVerify(verifyStr string) {
-	log.Println("Pulsar Consumer")
+func subscribe() (pulsar.Client, pulsar.Consumer) {
+	subscriptionName := "my-subscription"
+	log.Printf("Pulsar Consumer subscribe to %s\n", subscriptionName)
 
 	// Configuration variables pertaining to this consumer
 	trustStore := util.AssignString(os.Getenv("TrustStore"), "/etc/ssl/certs/ca-bundle.crt")
 	log.Printf("trust store %v", trustStore)
-	subscriptionName := "my-subscription"
 
 	token := pulsar.NewAuthenticationToken(pulsarToken)
 
@@ -168,18 +175,18 @@ func consumeToVerify(verifyStr string) {
 		Authentication:        token,
 		TLSTrustCertsFilePath: trustStore,
 	})
-
 	errNil(err)
-	defer client.Close()
 
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
 		Topic:            functionSinkTopic,
 		SubscriptionName: subscriptionName,
+		SubscriptionInitPos: pulsar.Latest,
 	})
-
 	errNil(err)
-	defer consumer.Close()
+	return client, consumer
+}
 
+func consumeToVerify(consumer pulsar.Consumer, verifyStr string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 181*time.Second)
 	defer cancel()
 
@@ -200,6 +207,10 @@ func consumeToVerify(verifyStr string) {
 
 func main() {
 
+	client, consumer := subscribe()
+	defer consumer.Close()
+	defer client.Close()
+
 	key := addWebhookToDb()
 	log.Println(key)
 	sentStr := produceMessage()
@@ -208,6 +219,6 @@ func main() {
 	time.AfterFunc(181*time.Second, func() {
 		os.Exit(2)
 	})
-	consumeToVerify(sentStr)
+	consumeToVerify(consumer, sentStr)
 	deleteWebhook(key)
 }

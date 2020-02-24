@@ -1,0 +1,10 @@
+---
+PORT: 3000
+CLUSTER: localhost
+PbDbType: inmemory
+PulsarPublicKey: ./unit-test/example_public_key.pub
+PulsarPrivateKey: ./unit-test/example_private_key
+PbDbInterval: 15s
+DbConnectionStr: pulsar+ssl://useast1.gcp.kafkaesque.io:6651
+DbName: persistent://ming-luo/local-useast1-gcp/webhook-db
+DbPassword: 
