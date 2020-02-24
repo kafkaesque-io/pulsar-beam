@@ -5,12 +5,17 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
+
+var clientsSync = &sync.RWMutex{}
+var producersSync = &sync.RWMutex{}
+var consumersSync = &sync.RWMutex{}
 
 var connections = make(map[string]pulsar.Client)
 var producers = make(map[string]pulsar.Producer)
@@ -22,7 +27,9 @@ func GetTopicDriver(url, tokenStr string) pulsar.Client {
 	trustStore := util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
 	key := tokenStr
 	token := pulsar.NewAuthenticationToken(tokenStr)
+	clientsSync.RLock()
 	driver, ok := connections[key]
+	clientsSync.RUnlock()
 	if ok {
 		return driver
 	}
@@ -42,14 +49,18 @@ func GetTopicDriver(url, tokenStr string) pulsar.Client {
 		return nil
 	}
 
+	clientsSync.Lock()
 	connections[key] = driver
+	clientsSync.Unlock()
 
 	return driver
 }
 
 func getProducer(url, token, topic string) pulsar.Producer {
 	key := topic
+	producersSync.RLock()
 	p, ok := producers[key]
+	producersSync.RUnlock()
 	if ok {
 		return p
 	}
@@ -68,7 +79,9 @@ func getProducer(url, token, topic string) pulsar.Producer {
 		return nil
 	}
 
+	producersSync.Lock()
 	producers[key] = p
+	producersSync.Unlock()
 	return p
 }
 
@@ -110,8 +123,10 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 // GetConsumer gets the matching Pulsar consumer
 func GetConsumer(url, token, topic, subscription, subscriptionKey string, subType pulsar.SubscriptionType, pos pulsar.InitialPosition) pulsar.Consumer {
 	key := subscriptionKey
-	consumer := consumers[key]
-	if consumer != nil {
+	consumersSync.RLock()
+	consumer, ok := consumers[key]
+	consumersSync.RUnlock()
+	if ok {
 		return consumer
 	}
 
@@ -131,12 +146,17 @@ func GetConsumer(url, token, topic, subscription, subscriptionKey string, subTyp
 		log.Printf("failed subscribe to pulsar consumer %v", err)
 		return nil
 	}
+
+	consumersSync.Lock()
 	consumers[key] = consumer
+	consumersSync.Unlock()
 	return consumer
 }
 
 // CancelConsumer closes consumer
 func CancelConsumer(key string) {
+	consumersSync.Lock()
+	defer consumersSync.Unlock()
 	c, ok := consumers[key]
 	if ok {
 		if strings.HasPrefix(c.Subscription(), model.NonResumable) {
@@ -147,7 +167,6 @@ func CancelConsumer(key string) {
 		if err != nil {
 			log.Printf("cancel consumer failed %v", err.Error())
 		}
-		log.Println("consumer  close() called")
 	} else {
 		log.Printf("failed to locate consumer key %v", key)
 	}

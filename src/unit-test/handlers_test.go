@@ -162,6 +162,13 @@ func TestTopicConfig(t *testing.T) {
 	assert(t, err != nil, "")
 
 	topic.Webhooks[0].SubscriptionType = "shared"
+	_, err = model.ValidateTopicConfig(topic)
+	errNil(t, err)
+
+	topic.Webhooks[0].SubscriptionType = "exclusive"
+	_, err = model.ValidateTopicConfig(topic)
+	errNil(t, err)
+
 	topic.Webhooks[1].Subscription = ""
 	equals(t, "", topic.Webhooks[1].Subscription)
 	_, err = model.ValidateTopicConfig(topic)

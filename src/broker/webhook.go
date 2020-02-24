@@ -104,7 +104,7 @@ func pushWebhook(url string, data []byte, headers []string) (int, *http.Response
 		return http.StatusInternalServerError, nil
 	}
 
-	log.Println(res.StatusCode)
+	log.Printf("webhook endpoint resp status code %d", res.StatusCode)
 	return res.StatusCode, res
 }
 
@@ -129,7 +129,6 @@ func toPulsar(r *http.Response) {
 }
 
 func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, headers []string) {
-	log.Printf("push to url notrification: %s", url)
 	code, res := pushWebhook(url, data, headers)
 	if (code >= 200 && code < 300) || code == http.StatusUnprocessableEntity {
 		c.Ack(msg)
@@ -166,7 +165,6 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 	// infinite loop to receive messages
 	// TODO receive can starve stop channel if it waits for the next message indefinitely
 	for {
-		log.Println("webhook wait on message")
 		msg, err := c.Receive(ctx)
 		if err != nil {
 			log.Printf("error from consumer loop receive: %v\n", err)
@@ -185,7 +183,6 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 			if json.Valid(data) {
 				headers = append(headers, "content-type:application/json")
 			}
-			log.Printf("push to webhook url %s\n", whCfg.URL)
 			pushAndAck(c, msg, whCfg.URL, data, headers)
 		} else {
 			return nil
