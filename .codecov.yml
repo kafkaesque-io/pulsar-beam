@@ -8,7 +8,15 @@
 # ----------------------
 coverage:
   status:
-    patch: false
+    project:
+      default:
+        threshold: 0.5
+        if_not_found: success
+    patch:
+      default:
+        enabled: no
+    changes:
+      default:
 
   range: 20..40     # First number represents red, and second represents green
                     # (default is 70..100)
@@ -20,7 +28,7 @@ coverage:
 # which folders/files to ignore
 ignore:
   - */unit-test/.*
-  - */e2e/*
+  - */e2e/.*
 
 # Pull request comments:
 # ----------------------
