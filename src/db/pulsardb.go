@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
@@ -41,12 +41,11 @@ func (s *PulsarHandler) Init() error {
 
 	var err error
 	s.client, err = pulsar.NewClient(pulsar.ClientOptions{
-		URL:                     pulsarURL,
-		Authentication:          token,
-		TLSTrustCertsFilePath:   trustStore,
-		IOThreads:               3,
-		OperationTimeoutSeconds: 30,
-		StatsIntervalInSeconds:  300,
+		URL:                   pulsarURL,
+		Authentication:        token,
+		TLSTrustCertsFilePath: trustStore,
+		OperationTimeout:      30 * time.Second,
+		ConnectionTimeout:     30 * time.Second,
 	})
 
 	if err != nil {
@@ -54,13 +53,8 @@ func (s *PulsarHandler) Init() error {
 	}
 
 	s.producer, err = s.client.CreateProducer(pulsar.ProducerOptions{
-		Topic:                   topicName,
-		SendTimeout:             10 * time.Second,
-		Batching:                true,
-		BatchingMaxMessages:     10,
-		BatchingMaxPublishDelay: 10 * time.Millisecond,
-		MaxPendingMessages:      100,
-		BlockIfQueueFull:        true,
+		Topic:           topicName,
+		DisableBatching: true,
 	})
 	if err != nil {
 		return err
@@ -68,7 +62,7 @@ func (s *PulsarHandler) Init() error {
 
 	s.reader, err = s.client.CreateReader(pulsar.ReaderOptions{
 		Topic:          topicName,
-		StartMessageID: pulsar.EarliestMessage,
+		StartMessageID: pulsar.EarliestMessageID(),
 		ReadCompacted:  true,
 	})
 
@@ -157,7 +151,7 @@ func (s *PulsarHandler) updateCacheAndPulsar(topicCfg *model.TopicConfig) (strin
 		Key:     topicCfg.Key,
 	}
 
-	if err = s.producer.Send(ctx, msg); err != nil {
+	if _, err = s.producer.Send(ctx, &msg); err != nil {
 		return "", err
 	}
 	// s.producer.Flush() do not use it's a blocking call
@@ -247,7 +241,7 @@ func (s *PulsarHandler) DeleteByKey(hashedTopicKey string) (string, error) {
 		Key:     v.Key,
 	}
 
-	if err = s.producer.Send(ctx, msg); err != nil {
+	if _, err = s.producer.Send(ctx, &msg); err != nil {
 		return "", err
 	}
 

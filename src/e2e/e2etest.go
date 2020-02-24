@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
@@ -35,6 +35,8 @@ var pulsarToken,
 
 var restURL = "http://localhost:3000/v2/topic"
 
+type received struct {}
+
 func init() {
 	// required parameters from os.env
 	pulsarToken = getEnvPanic("PULSAR_TOKEN")
@@ -43,6 +45,7 @@ func init() {
 	restAPIToken = getEnvPanic("REST_API_TOKEN")
 	webhookURL = getEnvPanic("WEBHOOK2_URL")
 	functionSinkTopic = getEnvPanic("FN_SINK_TOPIC")
+
 }
 
 func getEnvPanic(key string) string {
@@ -67,13 +70,14 @@ func errNil(err error) {
 
 // returns the key of the topic
 func addWebhookToDb() string {
-
 	// Create a topic and webhook via REST
 	topicConfig, err := model.NewTopicConfig(webhookTopic, pulsarURL, pulsarToken)
 	errNil(err)
 
+	// log.Printf("register webhook %s\nwith pulsar %s and topic %s\n", webhookURL, pulsarURL, webhookTopic)
 	wh := model.NewWebhookConfig(webhookURL)
 	wh.InitialPosition = "earliest"
+	wh.Subscription = "my-subscription"
 	topicConfig.Webhooks = append(topicConfig.Webhooks, wh)
 
     if _, err = model.ValidateTopicConfig(topicConfig); err != nil{
@@ -104,7 +108,6 @@ func addWebhookToDb() string {
 
 	log.Printf("post call to rest API statusCode %d", resp.StatusCode)
 	eval(resp.StatusCode == 201, "expected receiver status code is 201")
-	log.Println(topicConfig)
 	return topicConfig.Key
 }
 
@@ -127,12 +130,12 @@ func deleteWebhook(key string) {
 	eval(resp.StatusCode == 200, "expected receiver status code is 200")
 }
 
-func produceMessage() string {
+func produceMessage(sentMessage string) string {
 
 	beamReceiverURL := "http://localhost:3000/v1/firehose"
-	sentMessage := fmt.Sprintf("hello-from-e2e-test %d", time.Now().Unix())
 	originalData := []byte(`{"Data": "` + sentMessage + `"}`)
 	log.Println(string(originalData))
+	// log.Printf("send to topic %s\n", webhookTopic)
 
 	//Send to Pulsar Beam
 	req, err := http.NewRequest("POST", beamReceiverURL, bytes.NewBuffer(originalData))
@@ -159,8 +162,9 @@ func produceMessage() string {
 	return sentMessage
 }
 
-func subscribe() (pulsar.Client, pulsar.Consumer) {
+func subscribe(verifyStr string, verified chan received) {
 	subscriptionName := "my-subscription"
+	// log.Printf("Pulsar Consumer sink topic %s\n", functionSinkTopic)
 	log.Printf("Pulsar Consumer subscribe to %s\n", subscriptionName)
 
 	// Configuration variables pertaining to this consumer
@@ -180,13 +184,12 @@ func subscribe() (pulsar.Client, pulsar.Consumer) {
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
 		Topic:            functionSinkTopic,
 		SubscriptionName: subscriptionName,
-		SubscriptionInitPos: pulsar.Latest,
+		SubscriptionInitialPosition: pulsar.SubscriptionPositionLatest,
 	})
 	errNil(err)
-	return client, consumer
-}
+	defer consumer.Close()
+	defer client.Close()
 
-func consumeToVerify(consumer pulsar.Consumer, verifyStr string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 181*time.Second)
 	defer cancel()
 
@@ -203,22 +206,29 @@ func consumeToVerify(consumer pulsar.Consumer, verifyStr string) {
 
 		consumer.Ack(msg)
 	}
+
+	verified <- received{}
 }
 
 func main() {
 
-	client, consumer := subscribe()
-	defer consumer.Close()
-	defer client.Close()
+	receivedChan := make(chan received, 1)
+	sentMessage := fmt.Sprintf("hello-from-e2e-test %d", time.Now().Unix())
 
 	key := addWebhookToDb()
-	log.Println(key)
-	sentStr := produceMessage()
+	log.Printf("add webhook %s", key)
+	go subscribe(sentMessage, receivedChan)
+	time.Sleep(15 * time.Second)
 
-	// timeout to fail the test case if no message received
-	time.AfterFunc(181*time.Second, func() {
-		os.Exit(2)
-	})
-	consumeToVerify(consumer, sentStr)
-	deleteWebhook(key)
+	produceMessage(sentMessage)
+
+	select {
+	case <- receivedChan:
+		log.Printf("successfull received and verified")
+	    deleteWebhook(key)
+	case <- time.Tick(121 * time.Second):
+	    deleteWebhook(key)
+		log.Fatal("failed to receive expected message, timed out")
+	}
+
 }

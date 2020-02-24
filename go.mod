@@ -4,9 +4,10 @@ go 1.13
 
 require (
 	github.com/DataDog/zstd v1.4.4 // indirect
-	github.com/apache/pulsar/pulsar-client-go v0.0.0-20190828080225-cc746322d51c
+	github.com/apache/pulsar-client-go v0.0.0-20200214184451-fc390a6a37f3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.0
+	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/hashicorp/go-retryablehttp v0.6.4
