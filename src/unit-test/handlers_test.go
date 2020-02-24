@@ -50,6 +50,10 @@ func TestTopicHandler(t *testing.T) {
 	errNil(t, err)
 	equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26")
 
+	key, err = model.GetKeyFromNames(" ", " test ")
+	assert(t, err != nil, "expected error with an empety topci name or pulsar uri")
+	equals(t, key, "")
+
 	// test create a new topic
 	req, err := http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
 	errNil(t, err)

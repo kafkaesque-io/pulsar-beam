@@ -3,6 +3,7 @@ package pulsardriver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -22,20 +23,20 @@ var producers = make(map[string]pulsar.Producer)
 var consumers = make(map[string]pulsar.Consumer)
 
 // GetTopicDriver acquires a new pulsar client
-func GetTopicDriver(url, tokenStr string) pulsar.Client {
+func GetTopicDriver(url, tokenStr string) (pulsar.Client, error) {
 	// TODO: add code to tell CentOS or Ubuntu
 	trustStore := util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
-	key := tokenStr
+	key := fmt.Sprintf("%s%s", url, tokenStr)
 	token := pulsar.NewAuthenticationToken(tokenStr)
 	clientsSync.RLock()
 	driver, ok := connections[key]
 	clientsSync.RUnlock()
 	if ok {
-		return driver
+		log.Println("ASDfasfsafdasdfsdafsadf")
+		return driver, nil
 	}
 
-	var err error
-	driver, err = pulsar.NewClient(pulsar.ClientOptions{
+	driver, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL:                     url,
 		Authentication:          token,
 		TLSTrustCertsFilePath:   trustStore,
@@ -45,50 +46,49 @@ func GetTopicDriver(url, tokenStr string) pulsar.Client {
 	})
 
 	if err != nil {
-		log.Printf("Could not instantiate Pulsar client: %v", err)
-		return nil
+		log.Println(err)
+		return nil, fmt.Errorf("Could not instantiate Pulsar client: %v", err)
 	}
 
 	clientsSync.Lock()
 	connections[key] = driver
 	clientsSync.Unlock()
 
-	return driver
+	log.Println("bogussssssdataaaa")
+	return driver, nil
 }
 
-func getProducer(url, token, topic string) pulsar.Producer {
+func getProducer(url, token, topic string) (pulsar.Producer, error) {
 	key := topic
 	producersSync.RLock()
 	p, ok := producers[key]
 	producersSync.RUnlock()
 	if ok {
-		return p
+		return p, nil
 	}
 
-	driver := GetTopicDriver(url, token)
-	if driver == nil {
-		return nil
+	driver, err := GetTopicDriver(url, token)
+	if err != nil {
+		return nil, err
 	}
 
-	var err error
 	p, err = driver.CreateProducer(pulsar.ProducerOptions{
 		Topic: topic,
 	})
-
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	producersSync.Lock()
 	producers[key] = p
 	producersSync.Unlock()
-	return p
+	return p, nil
 }
 
 // SendToPulsar sends data to a Pulsar producer.
 func SendToPulsar(url, token, topic string, data []byte, async bool) error {
-	p := getProducer(url, token, topic)
-	if p == nil {
+	p, err := getProducer(url, token, topic)
+	if err != nil {
 		return errors.New("Failed to create Pulsar producer")
 	}
 
@@ -121,21 +121,20 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 }
 
 // GetConsumer gets the matching Pulsar consumer
-func GetConsumer(url, token, topic, subscription, subscriptionKey string, subType pulsar.SubscriptionType, pos pulsar.InitialPosition) pulsar.Consumer {
+func GetConsumer(url, token, topic, subscription, subscriptionKey string, subType pulsar.SubscriptionType, pos pulsar.InitialPosition) (pulsar.Consumer, error) {
 	key := subscriptionKey
 	consumersSync.RLock()
 	consumer, ok := consumers[key]
 	consumersSync.RUnlock()
 	if ok {
-		return consumer
+		return consumer, nil
 	}
 
-	driver := GetTopicDriver(url, token)
-	if driver == nil {
-		return nil
+	driver, err := GetTopicDriver(url, token)
+	if err != nil {
+		return nil, err
 	}
 
-	var err error
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
 		Topic:               topic,
 		SubscriptionName:    subscription,
@@ -143,14 +142,13 @@ func GetConsumer(url, token, topic, subscription, subscriptionKey string, subTyp
 		Type:                subType,
 	})
 	if err != nil {
-		log.Printf("failed subscribe to pulsar consumer %v", err)
-		return nil
+		return nil, fmt.Errorf("failed subscribe to pulsar consumer %v", err)
 	}
 
 	consumersSync.Lock()
 	consumers[key] = consumer
 	consumersSync.Unlock()
-	return consumer
+	return consumer, nil
 }
 
 // CancelConsumer closes consumer

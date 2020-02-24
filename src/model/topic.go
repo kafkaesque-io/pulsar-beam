@@ -101,7 +101,9 @@ func NewWebhookConfig(URL string) WebhookConfig {
 }
 
 // GetKeyFromNames generate topic key based on topic full name and pulsar url
-func GetKeyFromNames(name, url string) (string, error) {
+func GetKeyFromNames(topicFullName, pulsarURL string) (string, error) {
+	url := strings.TrimSpace(pulsarURL)
+	name := strings.TrimSpace(topicFullName)
 	if url == "" || name == "" {
 		return "", errors.New("missing PulsarURL or TopicFullName")
 	}
