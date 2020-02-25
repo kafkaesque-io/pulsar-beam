@@ -21,8 +21,14 @@ func TestClientCreation(t *testing.T) {
 	assert(t, err != nil, "create pulsar driver with bogus url")
 	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
 
-	_, err = pulsardriver.GetTopicDriver("pulsar://useat2.do.kafkaesque.io:6650", "token")
+	_, err = pulsardriver.GetTopicDriver("pulsar://useast1.do.kafkaesque.io:6650", "token")
 	errNil(t, err)
+
+	/*err = pulsardriver.SendToPulsar("pulsar+ssl://useast1.gcp.kafkaesque.io:6651", "token", "topic", []byte("mock up payload"), false)
+	assert(t, err != nil, "create pulsar driver with bogus url")
+	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
+
+	*/
 
 	_, err = pulsardriver.GetConsumer("pulsar://test url", "token", "topicname", "sub", "subKey", pulsar.Failover, pulsar.SubscriptionPositionLatest)
 	assert(t, err != nil, "create pulsar consumer with bogus url")

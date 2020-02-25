@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -71,6 +72,10 @@ func TestController64EncodeWithEncryption(t *testing.T) {
 	de, err2 := DecryptWithBase64(en)
 	errNil(t, err2)
 	equals(t, s, de)
+
+	// failure cases
+	_, err2 = DecryptWithBase64(fmt.Sprintf("%sy", en))
+	assert(t, err2 != nil, "expect error with incorrect decryption")
 }
 
 func TestGenWriteKey(t *testing.T) {
@@ -104,7 +109,10 @@ func testTokenSignAndVerify(t *testing.T, privateKeyPath, publicKeyPath string) 
 	errNil(t, err0)
 	assert(t, token.Valid, "validate a valid token")
 
-	valid, _ := authen.VerifyTokenSubject(tokenString, "myadmin")
+	valid, _ := authen.VerifyTokenSubject("bogustokenstr", "myadmin")
+	assert(t, valid == false, "validate token fails test")
+
+	valid, _ = authen.VerifyTokenSubject(tokenString, "myadmin")
 	assert(t, valid, "validate token's expected subject")
 
 	valid, _ = authen.VerifyTokenSubject(tokenString, "admin")
@@ -121,4 +129,10 @@ func testTokenSignAndVerify(t *testing.T, privateKeyPath, publicKeyPath string) 
 	t2 := time.Now().Add(time.Hour * 1)
 	expireOffset := authen.GetTokenRemainingValidity(t2)
 	equals(t, expireOffset, 3600)
+
+	t2 = time.Now().Add(time.Hour * 3)
+	authen.GetTokenRemainingValidity(t2)
+	expireOffset = authen.GetTokenRemainingValidity(t2)
+	equals(t, expireOffset, 3600*3)
+
 }

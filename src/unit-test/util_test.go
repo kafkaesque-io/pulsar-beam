@@ -82,6 +82,15 @@ func TestEffectiveRoutes(t *testing.T) {
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check receiver required routes")
 }
 
+func TestHTTPRouters(t *testing.T) {
+	mode := "hybrid"
+	router := route.NewRouter(&mode)
+
+	routeName := "receive"
+	route := router.Get(routeName)
+	assert(t, route == nil, "get route name")
+}
+
 func TestMainControlMode(t *testing.T) {
 	mode := "receiver"
 	assert(t, IsBroker(&mode) == false, "")
