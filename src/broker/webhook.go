@@ -154,7 +154,6 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 	if err != nil {
 		return err
 	}
-	log.Printf("SubTypee %s, %d, IniPosition %s, %d", whCfg.SubscriptionType, subType, whCfg.InitialPosition, pos)
 	c, err := pulsardriver.GetConsumer(url, token, topic, whCfg.Subscription, subscriptionKey, subType, pos)
 	if err != nil {
 		return fmt.Errorf("Failed to create Pulsar subscription %v", err)

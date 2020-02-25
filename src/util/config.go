@@ -16,7 +16,7 @@ import (
 
 // DefaultConfigFile - default config file
 // it can be overwritten by env variable PULSAR_BEAM_CONFIG
-const DefaultConfigFile = "../config/pulsar_beam.json"
+const DefaultConfigFile = "../config/pulsar_beam.yml"
 
 // Configuration - this server's configuration
 type Configuration struct {

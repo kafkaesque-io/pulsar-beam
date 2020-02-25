@@ -57,20 +57,9 @@ jobs:
         run: |
           ls /var/lib/mongodb
           sudo systemctl status mongodb
-      - name: Install dependencies
-        run: |
-          pwd
-          echo ${HOME}
-          echo ${GITHUB_WORKSPACE}
-          echo ${GOPATH}
-          echo ${GOROOT}
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
-          ls ./*apache-pulsar-client*.deb
-          sudo apt install ./*apache-pulsar-client*.deb
-          go mod download
       - name: Build Binary
         run: |
+          go mod download
           cd src
           go build ./...
       - name: Go Vet
@@ -118,6 +107,9 @@ jobs:
           file: ./coverage.txt
           yml: ./.codecov.yml
           fail_ci_fi_error: true
+          path: go/src/github.com/pulsar-beam
+        run: |
+          pwd
 
   e2e_test:
     name: e2e_test
@@ -133,14 +125,6 @@ jobs:
       - name: Install dependencies
         run: |
           pwd
-          echo ${HOME}
-          echo ${GITHUB_WORKSPACE}
-          echo ${GOPATH}
-          echo ${GOROOT}
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
-          ls ./*apache-pulsar-client*.deb
-          sudo apt install ./*apache-pulsar-client*.deb
           go mod download
       - name: Install MongoDB
         run: |

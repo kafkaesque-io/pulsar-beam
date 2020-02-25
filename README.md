@@ -35,7 +35,9 @@ These HTTP headers are required to map to Pulsar topic.
 3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL is required
 
 ### Webhook registration
-Webhook registration is done via REST API backed by configurable database, such as MongoDB, in momery cache, and Pulsar topic. Yes, we can use a compacted Pulsar Topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.json` file or the env variable `PbDbType`.
+Webhook registration is done via REST API backed by configurable database, such as MongoDB, in momery cache, and Pulsar topic. Yes, we can use a compacted Pulsar Topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.
+
+Both json and yml format are supported as configuration file.
 
 TODO: add REST API document.
 
@@ -99,5 +101,6 @@ $ sudo docker build -t pulsar-beam .
 This is an example of file based user Pulsar topic configurations.
 
 ```
-$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -v /home/ming/go/src/github.com/pulsar-beam/config:/root/config -p 3000:3000 --name=pbeam-server pulsar-beam
+$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -v ~/go/src/github.com/pulsar-beam/config:/root/config -p 3000:3000 --name=pbeam-server pulsar-beam
 ```
+`pulsar_beam.yml` and private and public key files shall be under the config folder in the above example.
