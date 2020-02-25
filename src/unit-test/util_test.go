@@ -2,6 +2,7 @@ package tests
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -58,10 +59,13 @@ func TestLoadConfigFile(t *testing.T) {
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")
 	assert(t, config.PbDbType == "mongo", "default config setting")
 
+	dbType := "inmemory2"
+	os.Setenv("PbDbType", dbType)
 	ReadConfigFile("../../config/pulsar_beam.yml")
 	config2 := GetConfig()
 	assert(t, config2.PORT == "9876543", "config value overwritteen by env")
-	assert(t, config2.PbDbType == "inmemory", "default config setting")
+	fmt.Println(config2.PbDbType)
+	assert(t, config2.PbDbType == dbType, "default config setting")
 }
 
 func TestEffectiveRoutes(t *testing.T) {
@@ -76,6 +80,15 @@ func TestEffectiveRoutes(t *testing.T) {
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+prometheusLen), "check receiver required routes")
 	mode = "tokenserver"
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check receiver required routes")
+}
+
+func TestHTTPRouters(t *testing.T) {
+	mode := "hybrid"
+	router := route.NewRouter(&mode)
+
+	routeName := "receive"
+	route := router.Get(routeName)
+	assert(t, route == nil, "get route name")
 }
 
 func TestMainControlMode(t *testing.T) {

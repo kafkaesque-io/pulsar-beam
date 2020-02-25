@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pulsar-beam/src/db"
 	"github.com/pulsar-beam/src/model"
@@ -168,11 +168,19 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 		msg, err := c.Receive(ctx)
 		if err != nil {
 			log.Printf("error from consumer loop receive: %v\n", err)
+			switch strings.TrimSpace(err.Error()) {
+			case "consumer closed":
+				log.Printf("exit consumer loop if consumer closed")
+				return err
+			default:
+				//continue
+			}
 		} else if msg != nil {
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%s", msg.ID()))
 			headers = append(headers, fmt.Sprintf("PulsarPublishedTime:%s", msg.PublishTime().String()))
 			headers = append(headers, fmt.Sprintf("PulsarTopic:%s", msg.Topic()))
-			if msg.EventTime() != nil {
+			nilTime := time.Time{}
+			if msg.EventTime() != nilTime {
 				headers = append(headers, fmt.Sprintf("PulsarEventTime:%s", msg.EventTime().String()))
 			}
 			for k, v := range msg.Properties() {
@@ -183,6 +191,7 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 			if json.Valid(data) {
 				headers = append(headers, "content-type:application/json")
 			}
+			log.Println(string(data))
 			pushAndAck(c, msg, whCfg.URL, data, headers)
 		} else {
 			return nil
@@ -200,7 +209,7 @@ func run() {
 			topic := cfg.TopicFullName
 			token := cfg.Token
 			url := cfg.PulsarURL
-			subscriptionKey := fmt.Sprintf("%s%s", cfg.Key, whCfg.Subscription)
+			subscriptionKey := fmt.Sprintf("%s%s", cfg.Key, whCfg.URL)
 			status := whCfg.WebhookStatus
 			ok := ReadWebhook(subscriptionKey)
 			if status == model.Activated {

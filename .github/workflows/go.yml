@@ -57,20 +57,9 @@ jobs:
         run: |
           ls /var/lib/mongodb
           sudo systemctl status mongodb
-      - name: Install dependencies
-        run: |
-          pwd
-          echo ${HOME}
-          echo ${GITHUB_WORKSPACE}
-          echo ${GOPATH}
-          echo ${GOROOT}
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
-          ls ./*apache-pulsar-client*.deb
-          sudo apt install ./*apache-pulsar-client*.deb
-          go mod download
       - name: Build Binary
         run: |
+          go mod download
           cd src
           go build ./...
       - name: Go Vet
@@ -89,19 +78,9 @@ jobs:
           ls /usr/local/share/ca-certificate
           sudo update-ca-certificates
           ls /etc/ssl/certs
-      - name: Run Tests
+      - name: Run Test and Code Coverage
         run: |
           echo $TrustStore
-          cd src/unit-test
-          go test -v ./...
-        env:
-          GOPATH: /home/runner/work/pulsar-beam/go
-          TrustStore: /etc/ssl/certs/ca-certificates.crt
-          PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
-          PULSAR_URI: ${{ secrets.PULSAR_URI }}
-          REST_DB_TABLE_TOPIC: ${{ secrets.REST_DB_TABLE_TOPIC }}
-      - name: Run Code Coverage
-        run: |
           pwd
           cd ./scripts
           ./test_coverage.sh
@@ -118,6 +97,7 @@ jobs:
           file: ./coverage.txt
           yml: ./.codecov.yml
           fail_ci_fi_error: true
+          path: go/src/github.com/pulsar-beam
 
   e2e_test:
     name: e2e_test
@@ -133,14 +113,6 @@ jobs:
       - name: Install dependencies
         run: |
           pwd
-          echo ${HOME}
-          echo ${GITHUB_WORKSPACE}
-          echo ${GOPATH}
-          echo ${GOROOT}
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client.deb"
-          wget --user-agent=Mozilla "https://archive.apache.org/dist/pulsar/pulsar-2.4.1/DEB/apache-pulsar-client-dev.deb"
-          ls ./*apache-pulsar-client*.deb
-          sudo apt install ./*apache-pulsar-client*.deb
           go mod download
       - name: Install MongoDB
         run: |

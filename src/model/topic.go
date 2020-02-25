@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/icrypto"
 )
 
@@ -91,7 +91,7 @@ func NewTopicConfig(topicFullName, pulsarURL, token string) (TopicConfig, error)
 func NewWebhookConfig(URL string) WebhookConfig {
 	cfg := WebhookConfig{}
 	cfg.URL = URL
-	cfg.Subscription = NonResumable + icrypto.GenTopicKey()
+	cfg.Subscription = fmt.Sprintf("%s%s%d", NonResumable, icrypto.GenTopicKey(), time.Now().UnixNano())
 	cfg.WebhookStatus = Activated
 	cfg.SubscriptionType = "exclusive"
 	cfg.InitialPosition = "latest"
@@ -123,12 +123,12 @@ func GenKey(topicFullName, pulsarURL string) string {
 }
 
 // GetInitialPosition returns the initial position for subscription
-func GetInitialPosition(pos string) (pulsar.InitialPosition, error) {
+func GetInitialPosition(pos string) (pulsar.SubscriptionInitialPosition, error) {
 	switch strings.ToLower(pos) {
 	case "latest", "":
-		return pulsar.Latest, nil
+		return pulsar.SubscriptionPositionLatest, nil
 	case "earliest":
-		return pulsar.Earliest, nil
+		return pulsar.SubscriptionPositionEarliest, nil
 	default:
 		return -1, fmt.Errorf("invalid subscription initial position %s", pos)
 	}

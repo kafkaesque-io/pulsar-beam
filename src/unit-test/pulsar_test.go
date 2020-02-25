@@ -2,9 +2,10 @@ package tests
 
 import (
 	"os"
+	"strings"
 	"testing"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/pulsardriver"
 	"github.com/pulsar-beam/src/util"
 )
@@ -16,10 +17,21 @@ func TestClientCreation(t *testing.T) {
 	util.Config.PbDbType = "pulsarAsDb"
 	util.Config.TrustStore = os.Getenv("TrustStore")
 
-	_, _ = pulsardriver.GetTopicDriver("pulsar://test url", "token")
-	//errNil(t, err)
-	//assert(t, err == nil, "create pulsar driver with bogus url")
+	_, err := pulsardriver.GetTopicDriver("pulsar://test url", "token")
+	assert(t, err != nil, "create pulsar driver with bogus url")
+	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
 
-	_, _ = pulsardriver.GetConsumer("pulsar://test url", "token", "topicname", "sub", "subKey", pulsar.Failover, pulsar.Latest)
-	//assert(t, err != nil, "create pulsar consumer with bogus url")
+	_, err = pulsardriver.GetTopicDriver("pulsar://useast1.do.kafkaesque.io:6650", "token")
+	errNil(t, err)
+
+	/*err = pulsardriver.SendToPulsar("pulsar+ssl://useast1.gcp.kafkaesque.io:6651", "token", "topic", []byte("mock up payload"), false)
+	assert(t, err != nil, "create pulsar driver with bogus url")
+	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
+
+	*/
+
+	_, err = pulsardriver.GetConsumer("pulsar://test url", "token", "topicname", "sub", "subKey", pulsar.Failover, pulsar.SubscriptionPositionLatest)
+	assert(t, err != nil, "create pulsar consumer with bogus url")
+
+	pulsardriver.CancelConsumer("testkey") //just to bump up code coverage
 }

@@ -21,5 +21,5 @@ go vet ./...
 
 echo run go build
 mkdir -p ${DIR}/../bin
-rm -f ${DIR}/../bin/main
-go build -o ${DIR}/../bin/main .
+rm -f ${DIR}/../bin/pulsar-beam
+go build -o ${DIR}/../bin/pulsar-beam .

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/model"
 	"github.com/pulsar-beam/src/util"
 )
@@ -18,7 +18,10 @@ var clientsSync = &sync.RWMutex{}
 var producersSync = &sync.RWMutex{}
 var consumersSync = &sync.RWMutex{}
 
+// Key is pulsar url and token str
 var connections = make(map[string]pulsar.Client)
+
+// Key is pulsar url, token str, and topic
 var producers = make(map[string]pulsar.Producer)
 var consumers = make(map[string]pulsar.Consumer)
 
@@ -32,17 +35,15 @@ func GetTopicDriver(url, tokenStr string) (pulsar.Client, error) {
 	driver, ok := connections[key]
 	clientsSync.RUnlock()
 	if ok {
-		log.Println("ASDfasfsafdasdfsdafsadf")
 		return driver, nil
 	}
 
 	driver, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL:                     url,
-		Authentication:          token,
-		TLSTrustCertsFilePath:   trustStore,
-		IOThreads:               3,
-		OperationTimeoutSeconds: 30,
-		StatsIntervalInSeconds:  300,
+		URL:                   url,
+		Authentication:        token,
+		TLSTrustCertsFilePath: trustStore,
+		OperationTimeout:      30 * time.Second,
+		ConnectionTimeout:     30 * time.Second,
 	})
 
 	if err != nil {
@@ -54,12 +55,11 @@ func GetTopicDriver(url, tokenStr string) (pulsar.Client, error) {
 	connections[key] = driver
 	clientsSync.Unlock()
 
-	log.Println("bogussssssdataaaa")
 	return driver, nil
 }
 
 func getProducer(url, token, topic string) (pulsar.Producer, error) {
-	key := topic
+	key := fmt.Sprintf("%s%s%s", url, token, topic)
 	producersSync.RLock()
 	p, ok := producers[key]
 	producersSync.RUnlock()
@@ -109,7 +109,7 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 	}
 
 	if async {
-		p.SendAsync(ctx, message, func(msg pulsar.ProducerMessage, err error) {
+		p.SendAsync(ctx, &message, func(messageId pulsar.MessageID, msg *pulsar.ProducerMessage, err error) {
 			if err != nil {
 				log.Printf("send to Pulsar err %v", err)
 				// TODO: add retry
@@ -117,11 +117,12 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 		})
 		return nil
 	}
-	return p.Send(ctx, message)
+	_, err = p.Send(ctx, &message)
+	return err
 }
 
 // GetConsumer gets the matching Pulsar consumer
-func GetConsumer(url, token, topic, subscription, subscriptionKey string, subType pulsar.SubscriptionType, pos pulsar.InitialPosition) (pulsar.Consumer, error) {
+func GetConsumer(url, token, topic, subscription, subscriptionKey string, subType pulsar.SubscriptionType, pos pulsar.SubscriptionInitialPosition) (pulsar.Consumer, error) {
 	key := subscriptionKey
 	consumersSync.RLock()
 	consumer, ok := consumers[key]
@@ -136,10 +137,10 @@ func GetConsumer(url, token, topic, subscription, subscriptionKey string, subTyp
 	}
 
 	consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
-		Topic:               topic,
-		SubscriptionName:    subscription,
-		SubscriptionInitPos: pos,
-		Type:                subType,
+		Topic:                       topic,
+		SubscriptionName:            subscription,
+		SubscriptionInitialPosition: pos,
+		Type:                        subType,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed subscribe to pulsar consumer %v", err)
@@ -160,11 +161,8 @@ func CancelConsumer(key string) {
 		if strings.HasPrefix(c.Subscription(), model.NonResumable) {
 			util.ReportError(c.Unsubscribe())
 		}
-		err := c.Close()
+		c.Close()
 		delete(consumers, key)
-		if err != nil {
-			log.Printf("cancel consumer failed %v", err.Error())
-		}
 	} else {
 		log.Printf("failed to locate consumer key %v", key)
 	}
