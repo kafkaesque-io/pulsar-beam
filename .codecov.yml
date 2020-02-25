@@ -17,22 +17,4 @@ coverage:
         enabled: no
     changes:
       default:
-
-  range: 20..40     # First number represents red, and second represents green
-                    # (default is 70..100)
-  round: up         # up, down, or nearest
-  precision: 2      # Number of decimal places, between 0 and 5
-
-# Ignoring Paths
-# --------------
-# which folders/files to ignore
-ignore:
-  - */unit-test/.*
-  - */e2e/.*
-
-# Pull request comments:
-# ----------------------
-# Diff is the Coverage Diff of the pull request.
-# Files are the files impacted by the pull request
-comment:
-  layout: diff, files  # accepted in any order: reach, diff, flags, and/or files
+        enabled: no
