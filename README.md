@@ -87,8 +87,11 @@ $ cd src/unit-test
 $ go test -v .
 ```
 
-### Docker-compose and Docker builds
-Run `sudo docker-compose up` to start the Pulsar beam server in hybrid mode with external database. 
+### Docker image and Docker builds
+The docker image can be pulled from dockerhub.io.
+```
+$ sudo docker pull kafkaesqueio/pulsar-beam
+```
 
 Here are steps to build docker image and run docker container in a file based configuration.
 
@@ -98,9 +101,8 @@ $ sudo docker build -t pulsar-beam .
 ```
 
 2. Run docker
-This is an example of file based user Pulsar topic configurations.
+This is an example of a default configurations using in-memory database. Customized `pulsar_beam.yml` and private and public key files can be mounted and passed in as an env variable `PULSAR_BEAM_CONFIG`. The certificate is required to connect to Pulsar with TLS enabled.
 
 ```
-$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -v ~/go/src/github.com/pulsar-beam/config:/root/config -p 3000:3000 --name=pbeam-server pulsar-beam
+$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -p 3000:3000 --name=pbeam-server pulsar-beam
 ```
-`pulsar_beam.yml` and private and public key files shall be under the config folder in the above example.

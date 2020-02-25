@@ -130,9 +130,4 @@ func testTokenSignAndVerify(t *testing.T, privateKeyPath, publicKeyPath string) 
 	expireOffset := authen.GetTokenRemainingValidity(t2)
 	equals(t, expireOffset, 3600)
 
-	t2 = time.Now().Add(time.Hour * 3)
-	authen.GetTokenRemainingValidity(t2)
-	expireOffset = authen.GetTokenRemainingValidity(t2)
-	equals(t, expireOffset, 3600*3)
-
 }

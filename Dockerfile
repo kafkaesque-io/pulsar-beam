@@ -18,9 +18,10 @@ FROM alpine
 WORKDIR /root/bin
 RUN mkdir /root/config/
 
-# Copy the Pre-built binary file from the previous stage
-# COPY --from=builder $GOPATH/src/github.com/pulsar-beam/main .
+# Copy the Pre-built binary file and default configuraitons from the previous stage
 COPY --from=builder /root/src/pulsar-beam /root/bin
+COPY --from=builder /root/config/pulsar_beam_inmemory_db.yml /root/config/pulsar_beam.yml
+COPY --from=builder /root/src/unit-test/example_p* /root/config/
 
 # Command to run the executable
 CMD ["./pulsar-beam"]
