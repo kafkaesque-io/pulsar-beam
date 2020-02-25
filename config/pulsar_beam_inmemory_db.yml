@@ -1,0 +1,10 @@
+---
+PORT: 3000
+CLUSTER: localhost
+PbDbType: inmemory
+PulsarPublicKey: ../config/example_public_key.pub
+PulsarPrivateKey: ../config/example_private_key
+PbDbInterval: 10s
+DbConnectionStr: mongodb://localhost:27017
+DbName: 
+DbPassword: 

@@ -4,10 +4,13 @@
 # Check if this file is valid by running in bash:
 # curl -X POST --data-binary @.codecov.yml https://codecov.io/validate
 
+comment: no # do not comment PR with the result
 # Coverage configuration
 # ----------------------
 coverage:
   range: 40..55
+  precision: 2
+  round: up
 
   status:
     project:
