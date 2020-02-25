@@ -7,10 +7,12 @@
 # Coverage configuration
 # ----------------------
 coverage:
+  range: 40..55
+
   status:
     project:
-      enabled: yes
-      threshold: 5%
+      default:
+        target: auto
+        threshold: 5%
 
-    patch: no
-    changes: no
+    patch: false
