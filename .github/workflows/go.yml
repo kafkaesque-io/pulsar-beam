@@ -108,8 +108,6 @@ jobs:
           yml: ./.codecov.yml
           fail_ci_fi_error: true
           path: go/src/github.com/pulsar-beam
-        run: |
-          pwd
 
   e2e_test:
     name: e2e_test
