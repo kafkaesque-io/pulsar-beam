@@ -3,6 +3,7 @@
 )](https://github.com/kafkaesque-io/pulsar-beam/actions)
 [![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://golang.org/)
 [![codecov](https://codecov.io/gh/kafkaesque-io/pulsar-beam/branch/master/graph/badge.svg)](https://codecov.io/gh/kafkaesque-io/pulsar-beam)
+[![Docker image](https://shields.beevelop.com/docker/image/image-size/kafkaesqueio/pulsar-beam/0.22.svg?style=round-square)](https://hub.docker.com/r/kafkaesqueio/pulsar-beam/)
 [![LICENSE](https://img.shields.io/hexpm/l/pulsar.svg)](https://github.com/kafkaesque-io/pulsar-beam/blob/master/LICENSE)
 
 # Pulsar Beam
@@ -43,7 +44,7 @@ TODO: add REST API document.
 
 ### Sink source
 
-If a webhook's response contains a body and three headers including Authorization, TopicFn, and PulsarUrl, the beam server will send the body as a new event to another Pulsar's topic specified as in TopicFn and PulsarUrl.
+If a webhook's response contains a body and three headers including Authorization for Pulsar JWT, TopicFullName, and PulsarUrl, the beam server will send the body as a new event to another Pulsar's topic specified as in TopicFullName and PulsarUrl.
 
 ## Dev set up
 clone the repo at your gopath github.com/pulsar-beam folder.
