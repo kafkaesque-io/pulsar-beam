@@ -176,15 +176,16 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 				//continue
 			}
 		} else if msg != nil {
-			headers = append(headers, fmt.Sprintf("PulsarMessageId:%s", msg.ID()))
-			headers = append(headers, fmt.Sprintf("PulsarPublishedTime:%s", msg.PublishTime().String()))
-			headers = append(headers, fmt.Sprintf("PulsarTopic:%s", msg.Topic()))
+			fmt.Printf("PulsarMessageId:%#v", msg.ID())
+			headers = append(headers, fmt.Sprintf("PulsarMessageId:%#v", msg.ID()))
+			headers = append(headers, "PulsarPublishedTime:"+msg.PublishTime().String())
+			headers = append(headers, "PulsarTopic:"+msg.Topic())
 			nilTime := time.Time{}
 			if msg.EventTime() != nilTime {
-				headers = append(headers, fmt.Sprintf("PulsarEventTime:%s", msg.EventTime().String()))
+				headers = append(headers, "PulsarEventTime:"+msg.EventTime().String())
 			}
 			for k, v := range msg.Properties() {
-				headers = append(headers, fmt.Sprintf("PulsarProperties-%s:%s", k, v))
+				headers = append(headers, "PulsarProperties-"+k+":"+v)
 			}
 
 			data := msg.Payload()
@@ -209,7 +210,7 @@ func run() {
 			topic := cfg.TopicFullName
 			token := cfg.Token
 			url := cfg.PulsarURL
-			subscriptionKey := fmt.Sprintf("%s%s", cfg.Key, whCfg.URL)
+			subscriptionKey := cfg.Key + whCfg.URL
 			status := whCfg.WebhookStatus
 			ok := ReadWebhook(subscriptionKey)
 			if status == model.Activated {

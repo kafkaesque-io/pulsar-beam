@@ -44,7 +44,7 @@ TODO: add REST API document.
 
 ### Sink source
 
-If a webhook's response contains a body and three headers including Authorization for Pulsar JWT, TopicFullName, and PulsarUrl, the beam server will send the body as a new event to another Pulsar's topic specified as in TopicFullName and PulsarUrl.
+If a webhook's response contains a body and three headers including `Authorization` for Pulsar JWT, `TopicFn` for a topic fully qualified name, and `PulsarUrl`, the beam server will send the body as a new event to another Pulsar's topic specified as in TopicFn and PulsarUrl.
 
 ## Dev set up
 clone the repo at your gopath github.com/pulsar-beam folder.

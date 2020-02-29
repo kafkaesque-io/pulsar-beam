@@ -62,6 +62,14 @@ func TestRSA(t *testing.T) {
 	decrypted2, err := rsa.DecryptWithDefaultKey(ciphertext2)
 	errNil(t, err)
 	equals(t, text2, decrypted2)
+
+	// test unsupported functions
+	_, err = rsa.Decrypt([]byte{}, []byte{})
+	equals(t, err.Error(), "unsupported")
+
+	_, err = rsa.Encrypt([]byte{}, []byte{})
+	equals(t, err.Error(), "unsupported")
+
 }
 
 func TestController64EncodeWithEncryption(t *testing.T) {

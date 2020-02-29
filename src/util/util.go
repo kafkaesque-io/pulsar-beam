@@ -58,7 +58,7 @@ func ReceiverHeader(h *http.Header) (token, topicFN, pulsarURL string, err bool)
 	token = strings.TrimSpace(strings.Replace(h.Get("Authorization"), "Bearer", "", 1))
 	topicFN = h.Get("TopicFn")
 	pulsarURL = h.Get("PulsarUrl")
-	return token, topicFN, pulsarURL, token == "" || topicFN == ""
+	return token, topicFN, pulsarURL, token == "" || topicFN == "" || pulsarURL == ""
 
 }
 

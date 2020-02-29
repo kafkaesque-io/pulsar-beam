@@ -114,6 +114,7 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 // UpdateTopicHandler creates or updates a topic
 func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
 
 	var doc model.TopicConfig
 	err := decoder.Decode(&doc)

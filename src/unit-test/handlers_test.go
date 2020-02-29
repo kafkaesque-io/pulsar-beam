@@ -138,6 +138,22 @@ func TestTopicHandler(t *testing.T) {
 
 }
 
+func TestFireHoseReceiverHandler(t *testing.T) {
+
+	req, err := http.NewRequest(http.MethodPost, "/v1/firehose", bytes.NewReader([]byte{}))
+	errNil(t, err)
+
+	rr := httptest.NewRecorder()
+	req.Header.Set("Authorization", "application/json")
+	req.Header.Set("TopicFn", "picasso")
+	req.Header.Set("PulsarUrl999", "picasso")
+
+	handler := http.HandlerFunc(ReceiveHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusUnauthorized, rr.Code)
+}
+
 func TestSubjectMatch(t *testing.T) {
 	assert(t, !VerifySubject("picasso", "picasso"), "")
 	assert(t, VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
