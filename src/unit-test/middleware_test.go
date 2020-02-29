@@ -8,6 +8,7 @@ import (
 
 	"github.com/pulsar-beam/src/icrypto"
 	. "github.com/pulsar-beam/src/middleware"
+	"github.com/pulsar-beam/src/route"
 )
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +110,17 @@ func TestRateLimitMiddleware(t *testing.T) {
 		go request()
 	}
 
+}
+
+func TestLoggerMiddleware(t *testing.T) {
+	logger := route.Logger(http.HandlerFunc(mockHandler), "test")
+
+	req, err := http.NewRequest(http.MethodGet, "http://test", nil)
+	errNil(t, err)
+
+	rr := httptest.NewRecorder()
+	logger.ServeHTTP(rr, req)
+	equals(t, http.StatusOK, rr.Code)
 }
 
 func TestSemaphore(t *testing.T) {

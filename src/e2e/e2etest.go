@@ -35,7 +35,7 @@ var pulsarToken,
 
 var restURL = "http://localhost:3000/v2/topic"
 
-type received struct {}
+type received struct{}
 
 func init() {
 	// required parameters from os.env
@@ -80,7 +80,7 @@ func addWebhookToDb() string {
 	wh.Subscription = "my-subscription"
 	topicConfig.Webhooks = append(topicConfig.Webhooks, wh)
 
-    if _, err = model.ValidateTopicConfig(topicConfig); err != nil{
+	if _, err = model.ValidateTopicConfig(topicConfig); err != nil {
 		log.Fatal("Invalid topic config ", err)
 	}
 
@@ -182,8 +182,8 @@ func subscribe(verifyStr string, verified chan received) {
 	errNil(err)
 
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
-		Topic:            functionSinkTopic,
-		SubscriptionName: subscriptionName,
+		Topic:                       functionSinkTopic,
+		SubscriptionName:            subscriptionName,
 		SubscriptionInitialPosition: pulsar.SubscriptionPositionLatest,
 	})
 	errNil(err)
@@ -223,11 +223,11 @@ func main() {
 	produceMessage(sentMessage)
 
 	select {
-	case <- receivedChan:
-		log.Printf("successfull received and verified")
-	    deleteWebhook(key)
-	case <- time.Tick(121 * time.Second):
-	    deleteWebhook(key)
+	case <-receivedChan:
+		log.Printf("successful received and verified")
+		deleteWebhook(key)
+	case <-time.Tick(121 * time.Second):
+		deleteWebhook(key)
 		log.Fatal("failed to receive expected message, timed out")
 	}
 

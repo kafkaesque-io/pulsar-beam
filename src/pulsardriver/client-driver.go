@@ -59,7 +59,7 @@ func GetTopicDriver(url, tokenStr string) (pulsar.Client, error) {
 }
 
 func getProducer(url, token, topic string) (pulsar.Producer, error) {
-	key := fmt.Sprintf("%s%s%s", url, token, topic)
+	key := url + token + topic
 	producersSync.RLock()
 	p, ok := producers[key]
 	producersSync.RUnlock()
