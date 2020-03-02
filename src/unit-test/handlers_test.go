@@ -41,14 +41,14 @@ func TestTopicHandler(t *testing.T) {
 	topic := model.TopicConfig{}
 	topic.TopicFullName = "persistent://picasso/local-useast1-gcp/yet-another-test-topic"
 	topic.PulsarURL = "pulsar+ssl://useast1.gcp.kafkaesque.io:6651"
-	topic.Token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwaWNhc3NvIn0.TZilYXJOeeCLwNOHICCYyFxUlwOLxa_kzVjKcoQRTJm2xqmNzTn-s9zjbuaNMCDj1U7gRPHKHkWNDb2W4MwQd6Nkc543E_cIHlJG82eKKIsGfAEQpnPJLpzz2zytgmRON6HCPDsQDAKIXHriKmbmCzHLOILziks0oOCadBGC79iddb9DjPku6sU0nByS8r8_oIrRCqV_cNsH1MInA6CRNYkPJaJI0T8i77ND7azTXwH0FTX_KE_yRmOkXnejJ14GEEcBM99dPGg8jCp-zOyfvrMIJjWsWzjXYExxjKaC85779ciu59YO3cXd0Lk2LzlyB4kDKZgPyqOgyQFIfQ1eiA"
+	topic.Token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwaWNhc3NvIn0.TZilYXJOeeCLwNOHICCYyFxUlwOLxa_kzVjKcoQRTJm2xqmNzTn-s9zjbuaNMCDj1U7gRPHKHkWNDb2W4MwQd6Nkc543E_cIHlJG82eKKIsGfAEQpnPJLpzz2zytgmRON6HCPDsQDAKIXHriKmbmCzHLOILziks0oOCadBGC79iddb9DjPku6sU0nByS8r8_oIrRCqV_cNsH1MInA6CRNYkPJaJI0T8i77ND7azTXwH0FTX_KE_yRmOkXnejJ14GEEcBM99dPGg8jCp-zOyfvrMIJjWsWzjXYExxjKaC85779ciu59YO3cXd0Lk2LzlyB4kDKZgPyqOgyQFIfQ1eiA" // pragma: allowlist secret
 
 	reqJSON, err := json.Marshal(topic)
 	errNil(t, err)
 
 	key, err := model.GetKeyFromNames(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
-	equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26")
+	equals(t, key, "075fcf0870662590aa4b24939287f193a697ab26") // pragma: allowlist secret
 
 	key, err = model.GetKeyFromNames(" ", " test ")
 	assert(t, err != nil, "expected error with an empety topci name or pulsar uri")
