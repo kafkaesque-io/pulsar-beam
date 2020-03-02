@@ -32,7 +32,8 @@ jobs:
           go get -u golang.org/x/lint/golint 
           cd src
           golint ./...
-
+      - name: Detect secrets
+        uses: evanextreme/detect-secrets@1.0.0
   build_test:
     name: build and test
     runs-on: ubuntu-latest
