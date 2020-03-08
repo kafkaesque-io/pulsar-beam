@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 )
 
@@ -88,4 +90,12 @@ func StrContains(strs []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// GetEnvInt gets OS environment in integer format with a default if inproper value retrieved
+func GetEnvInt(env string, defaultNum int) int {
+	if i, err := strconv.Atoi(os.Getenv(env)); err == nil {
+		return i
+	}
+	return defaultNum
 }

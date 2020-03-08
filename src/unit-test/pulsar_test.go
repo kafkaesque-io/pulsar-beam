@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/pulsar-beam/src/pulsardriver"
 	"github.com/pulsar-beam/src/util"
 )
@@ -17,21 +16,40 @@ func TestClientCreation(t *testing.T) {
 	util.Config.PbDbType = "pulsarAsDb"
 	util.Config.TrustStore = os.Getenv("TrustStore")
 
-	_, err := pulsardriver.GetTopicDriver("pulsar://test url", "token")
+	os.Setenv("PulsarClientOperationTimeout", "1")
+	os.Setenv("PulsarClientConnectionTimeout", "1")
+
+	_, err := pulsardriver.GetPulsarClient("pulsar://test url", "token", false)
 	assert(t, err != nil, "create pulsar driver with bogus url")
 	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
 
-	_, err = pulsardriver.GetTopicDriver("pulsar://useast1.do.kafkaesque.io:6650", "token")
+	_, err = pulsardriver.GetPulsarClient("pulsar://useast1.do.kafkaesque.io:6650", "token", true)
 	errNil(t, err)
 
-	/*err = pulsardriver.SendToPulsar("pulsar+ssl://useast1.gcp.kafkaesque.io:6651", "token", "topic", []byte("mock up payload"), false)
-	assert(t, err != nil, "create pulsar driver with bogus url")
-	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
-
-	*/
-
-	_, err = pulsardriver.GetConsumer("pulsar://test url", "token", "topicname", "sub", "subKey", pulsar.Failover, pulsar.SubscriptionPositionLatest)
+	_, err = pulsardriver.GetPulsarConsumer("pulsar://test url", "token", "topicname", "sub", "failover", "latest", "subKey")
 	assert(t, err != nil, "create pulsar consumer with bogus url")
 
-	pulsardriver.CancelConsumer("testkey") //just to bump up code coverage
+	pulsardriver.CancelPulsarConsumer("testkey") //just to bump up code coverage
+}
+
+func TestProducerObject(t *testing.T) {
+	os.Setenv("PulsarClientOperationTimeout", "1")
+	os.Setenv("PulsarClientConnectionTimeout", "1")
+
+	_, err := pulsardriver.GetPulsarProducer("pulsar://test url", "tokenstring", "topicName")
+	assert(t, err != nil, "create pulsar consumer with bogus url")
+
+	// pulsardriver.SendToPulsar("pulsar://", "tokenstring", "topicName", []byte("payload"), false)
+
+	p := pulsardriver.PulsarProducer{}
+	p.UpdateTime()
+	p.Close()
+
+	c := pulsardriver.PulsarConsumer{}
+	c.UpdateTime()
+	c.Close()
+
+	clt := pulsardriver.PulsarClient{}
+	clt.UpdateTime()
+	clt.Close()
 }

@@ -20,30 +20,39 @@ import (
 	"github.com/pulsar-beam/src/util"
 )
 
+// SubCloseSignal is a signal object to pass for channel
+type SubCloseSignal struct{}
+
 // key is the hash of topic full name and pulsar url, and subscription name
-var webhooks = make(map[string]bool)
+var webhooks = make(map[string]chan *SubCloseSignal)
 var whLock = sync.RWMutex{}
 
 // ReadWebhook reads a thread safe map
-func ReadWebhook(key string) bool {
+func ReadWebhook(key string) (chan *SubCloseSignal, bool) {
 	whLock.RLock()
 	defer whLock.RUnlock()
-	_, ok := webhooks[key]
-	return ok
+	c, ok := webhooks[key]
+	return c, ok
 }
 
 // WriteWebhook writes a key/value to a thread safe map
-func WriteWebhook(key string) {
+func WriteWebhook(key string, c chan *SubCloseSignal) {
 	whLock.Lock()
 	defer whLock.Unlock()
-	webhooks[key] = true
+	webhooks[key] = c
 }
 
 // DeleteWebhook deletes a key from a thread safe map
-func DeleteWebhook(key string) {
+func DeleteWebhook(key string) bool {
 	whLock.Lock()
 	defer whLock.Unlock()
-	delete(webhooks, key)
+	if c, ok := webhooks[key]; ok {
+		c <- &SubCloseSignal{}
+		delete(webhooks, key)
+		//channel is deleted where it's been created with `defer`
+		return ok
+	}
+	return false
 }
 
 var singleDb db.Db
@@ -138,7 +147,7 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 		}
 	} else {
 		// replying on Pulsar to redeliver
-		log.Println("failed to push to webhook")
+		log.Printf("failed to push to webhook statusCode %d\n", code)
 	}
 }
 
@@ -146,36 +155,50 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 // Do not use context since go vet will puke that requires cancel invoked in the same function
 func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookConfig) error {
 	headers := whCfg.Headers
-	subType, err := model.GetSubscriptionType(whCfg.SubscriptionType)
+	_, err := model.GetSubscriptionType(whCfg.SubscriptionType)
 	if err != nil {
 		return err
 	}
-	pos, err := model.GetInitialPosition(whCfg.InitialPosition)
+	_, err = model.GetInitialPosition(whCfg.InitialPosition)
 	if err != nil {
 		return err
 	}
-	c, err := pulsardriver.GetConsumer(url, token, topic, whCfg.Subscription, subscriptionKey, subType, pos)
+	c, err := pulsardriver.GetPulsarConsumer(url, token, topic, whCfg.Subscription, whCfg.InitialPosition, whCfg.SubscriptionType, subscriptionKey)
 	if err != nil {
 		return fmt.Errorf("Failed to create Pulsar subscription %v", err)
 	}
 
-	WriteWebhook(subscriptionKey)
+	terminate := make(chan *SubCloseSignal, 2)
+	WriteWebhook(subscriptionKey, terminate)
+	defer close(terminate)
 	ctx := context.Background()
 
 	// infinite loop to receive messages
 	// TODO receive can starve stop channel if it waits for the next message indefinitely
+	retry := 0
+	retryMax := 3
 	for {
+		if retry > retryMax {
+			cancelConsumer(subscriptionKey)
+			return fmt.Errorf("consumer retried %d times, max reached", retryMax)
+		}
 		msg, err := c.Receive(ctx)
 		if err != nil {
 			log.Printf("error from consumer loop receive: %v\n", err)
-			switch strings.TrimSpace(err.Error()) {
-			case "consumer closed":
-				log.Printf("exit consumer loop if consumer closed")
-				return err
-			default:
-				//continue
+			retry++
+			select {
+			case <-terminate:
+				log.Printf("subscription %s received signal to exit consumer loop", subscriptionKey)
+				return nil
+			case <-time.Tick(time.Duration(2*retry) * time.Second):
+				//reconnect after error
+				c, err = pulsardriver.GetPulsarConsumer(url, token, topic, whCfg.Subscription, whCfg.InitialPosition, whCfg.SubscriptionType, subscriptionKey)
+				if err != nil {
+					return fmt.Errorf("Retry failed to create Pulsar subscription %v", err)
+				}
 			}
 		} else if msg != nil {
+			retry = 0
 			fmt.Printf("PulsarMessageId:%#v", msg.ID())
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%#v", msg.ID()))
 			headers = append(headers, "PulsarPublishedTime:"+msg.PublishTime().String())
@@ -194,8 +217,6 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 			}
 			log.Println(string(data))
 			pushAndAck(c, msg, whCfg.URL, data, headers)
-		} else {
-			return nil
 		}
 	}
 
@@ -212,11 +233,11 @@ func run() {
 			url := cfg.PulsarURL
 			subscriptionKey := cfg.Key + whCfg.URL
 			status := whCfg.WebhookStatus
-			ok := ReadWebhook(subscriptionKey)
+			_, ok := ReadWebhook(subscriptionKey)
 			if status == model.Activated {
 				subscriptionSet[subscriptionKey] = true
 				if !ok {
-					log.Printf("add activated webhook for topic subscription %v", subscriptionKey)
+					log.Printf("start activated webhook for topic subscription %v", subscriptionKey)
 					go ConsumeLoop(url, token, topic, subscriptionKey, whCfg)
 				}
 			}
@@ -244,11 +265,10 @@ func LoadConfig() []*model.TopicConfig {
 }
 
 func cancelConsumer(key string) error {
-	ok := ReadWebhook(key)
+	ok := DeleteWebhook(key)
 	if ok {
 		log.Printf("cancel consumer %v", key)
-		pulsardriver.CancelConsumer(key)
-		DeleteWebhook(key)
+		pulsardriver.CancelPulsarConsumer(key)
 		return nil
 	}
 	return errors.New("topic does not exist " + key)
