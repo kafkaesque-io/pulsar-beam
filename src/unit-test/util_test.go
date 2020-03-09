@@ -138,15 +138,23 @@ func TestReceiverHeader(t *testing.T) {
 
 func TestThreaSafeMap(t *testing.T) {
 	// TODO add more goroutine to test concurrency
-	equals(t, false, broker.ReadWebhook("first"))
-	broker.WriteWebhook("first")
-	equals(t, true, broker.ReadWebhook("first"))
+
+	_, rc := broker.ReadWebhook("first")
+	equals(t, false, rc)
+
+	sig := make(chan *broker.SubCloseSignal, 2)
+
+	broker.WriteWebhook("first", sig)
+	_, rc = broker.ReadWebhook("first")
+	equals(t, true, rc)
 	broker.DeleteWebhook("first")
-	equals(t, false, broker.ReadWebhook("first"))
+	_, rc = broker.ReadWebhook("first")
+	equals(t, false, rc)
 	go func() {
 		for i := 0; i < 1000; i++ {
-			broker.WriteWebhook("key" + strconv.Itoa(i))
-			broker.WriteWebhook("first")
+			sig2 := make(chan *broker.SubCloseSignal, 2)
+			broker.WriteWebhook("key"+strconv.Itoa(i), sig2)
+			broker.WriteWebhook("first", sig2)
 		}
 	}()
 	go func() {
@@ -157,8 +165,9 @@ func TestThreaSafeMap(t *testing.T) {
 	}()
 	go func() {
 		for i := 0; i < 1000; i++ {
+			sig3 := make(chan *broker.SubCloseSignal, 2)
 			broker.DeleteWebhook("key" + strconv.Itoa(i))
-			broker.WriteWebhook("first" + strconv.Itoa(i))
+			broker.WriteWebhook("first"+strconv.Itoa(i), sig3)
 		}
 	}()
 }
@@ -172,4 +181,12 @@ func TestStrContains(t *testing.T) {
 	assert(t, StrContains([]string{"foo", "bar", "flying"}, "foo"), "")
 	assert(t, !StrContains([]string{"foo", "bar", "flying"}, "foobar"), "")
 	assert(t, !StrContains([]string{}, "foobar"), "")
+}
+
+func TestGetEnvInt(t *testing.T) {
+	os.Setenv("Kopper", "546")
+	equals(t, 546, GetEnvInt("Kopper", 90))
+
+	os.Setenv("Kopper", "5o46")
+	equals(t, 946, GetEnvInt("Kopper", 946))
 }
