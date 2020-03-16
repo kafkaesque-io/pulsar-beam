@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pulsar-beam/src/icrypto"
-	. "github.com/pulsar-beam/src/middleware"
-	"github.com/pulsar-beam/src/route"
+	"github.com/kafkaesque-io/pulsar-beam/src/icrypto"
+	. "github.com/kafkaesque-io/pulsar-beam/src/middleware"
+	"github.com/kafkaesque-io/pulsar-beam/src/route"
 )
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {

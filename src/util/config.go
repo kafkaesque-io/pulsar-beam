@@ -11,7 +11,7 @@ import (
 	"unicode"
 
 	"github.com/ghodss/yaml"
-	"github.com/pulsar-beam/src/icrypto"
+	"github.com/kafkaesque-io/pulsar-beam/src/icrypto"
 )
 
 // DefaultConfigFile - default config file

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pulsar-beam/src/pulsardriver"
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 func TestClientCreation(t *testing.T) {

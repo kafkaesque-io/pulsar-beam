@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
 )
 
 // dbConn is a singlton of Db instance

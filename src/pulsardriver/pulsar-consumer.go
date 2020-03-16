@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/pulsar-beam/src/model"
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 // ConsumerCache caches a list Pulsar prudcers

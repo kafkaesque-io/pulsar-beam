@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/pulsar-beam/src/model"
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

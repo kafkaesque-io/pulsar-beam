@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
-          path: go/src/github.com/pulsar-beam
+          path: go/src/github.com/kafkaesque-io/pulsar-beam
 
       - name: Lint Go Code
         run: |
@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
-          path: go/src/github.com/pulsar-beam
+          path: go/src/github.com/kafkaesque-io/pulsar-beam
       - name: Install MongoDB
         run: |
           echo $GITHUB_EVENT_NAME
@@ -106,7 +106,7 @@ jobs:
           file: ./coverage.txt
           yml: ./.codecov.yml
           fail_ci_fi_error: true
-          path: go/src/github.com/pulsar-beam
+          path: go/src/github.com/kafkaesque-io/pulsar-beam
 
   e2e_test:
     name: e2e_test
@@ -117,7 +117,7 @@ jobs:
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
-          path: go/src/github.com/pulsar-beam
+          path: go/src/github.com/kafkaesque-io/pulsar-beam
 
       - name: Install dependencies
         run: |
@@ -181,7 +181,7 @@ jobs:
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
-          path: go/src/github.com/pulsar-beam
+          path: go/src/github.com/kafkaesque-io/pulsar-beam
 
       - name: Build Docker Image
         run: |
