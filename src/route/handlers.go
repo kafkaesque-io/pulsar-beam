@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/pulsar-beam/src/db"
-	"github.com/pulsar-beam/src/model"
-	"github.com/pulsar-beam/src/pulsardriver"
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/db"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 var singleDb db.Db

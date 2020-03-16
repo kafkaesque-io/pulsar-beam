@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 // AuthFunc is a function type to allow pluggable authentication middleware

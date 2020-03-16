@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/pulsar-beam/src/icrypto"
+	"github.com/kafkaesque-io/pulsar-beam/src/icrypto"
 )
 
 // Status can be used for webhook status

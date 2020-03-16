@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/pulsar-beam/src/middleware"
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/middleware"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 // NewRouter - create new router for HTTP routing

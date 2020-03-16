@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pulsar-beam/src/broker"
-	. "github.com/pulsar-beam/src/db"
-	"github.com/pulsar-beam/src/model"
-	"github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/broker"
+	. "github.com/kafkaesque-io/pulsar-beam/src/db"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 func TestUnsupportedDbDriver(t *testing.T) {

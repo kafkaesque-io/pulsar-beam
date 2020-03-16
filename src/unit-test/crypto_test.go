@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/pulsar-beam/src/icrypto"
+	. "github.com/kafkaesque-io/pulsar-beam/src/icrypto"
 )
 
 func TestAES(t *testing.T) {

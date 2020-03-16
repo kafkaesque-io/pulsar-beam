@@ -2,8 +2,8 @@
     "PORT": "3000",
     "CLUSTER": "localhost",
     "PbDbType": "mongo",
-    "PulsarPublicKey": "/home/runner/work/pulsar-beam/go/src/github.com/pulsar-beam/src/unit-test/example_public_key.pub",
-    "PulsarPrivateKey": "/home/runner/work/pulsar-beam/go/src/github.com/pulsar-beam/src/unit-test/example_private_key",
+    "PulsarPublicKey": "/home/runner/work/pulsar-beam/go/src/github.com/kafkaesque-io/pulsar-beam/src/unit-test/example_public_key.pub",
+    "PulsarPrivateKey": "/home/runner/work/pulsar-beam/go/src/github.com/kafkaesque-io/pulsar-beam/src/unit-test/example_private_key",
     "PbDbInterval": "60s",
     "DbConnectionStr": "mongodb://172.17.0.1:27017"
 

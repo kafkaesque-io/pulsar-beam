@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/pulsar-beam/src/broker"
-	"github.com/pulsar-beam/src/model"
-	"github.com/pulsar-beam/src/route"
-	. "github.com/pulsar-beam/src/util"
+	"github.com/kafkaesque-io/pulsar-beam/src/broker"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/route"
+	. "github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 func TestUUID(t *testing.T) {

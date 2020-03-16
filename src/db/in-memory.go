@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
 )
 
 /**

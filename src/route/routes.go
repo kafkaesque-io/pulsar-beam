@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/pulsar-beam/src/middleware"
+	"github.com/kafkaesque-io/pulsar-beam/src/middleware"
 )
 
 // Route - HTTP Route

@@ -1,4 +1,4 @@
-module github.com/pulsar-beam
+module github.com/kafkaesque-io/pulsar-beam
 
 go 1.13
 
