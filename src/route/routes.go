@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/kafkaesque-io/pulsar-beam/src/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Route - HTTP Route
@@ -25,7 +25,7 @@ var TokenServerRoutes = Routes{
 	Route{
 		"token server",
 		http.MethodGet,
-		"/subject",
+		"/subject9", //TODO: use `subject` once we could replace the existing token server
 		TokenSubjectHandler,
 		middleware.AuthVerifyJWT,
 	},
