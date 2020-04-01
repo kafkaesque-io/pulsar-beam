@@ -1,5 +1,5 @@
 ---
-PORT: 3000
+PORT: 8085
 CLUSTER: localhost
 PbDbType: inmemory
 PulsarPublicKey: ../config/example_public_key.pub

@@ -105,5 +105,5 @@ $ sudo docker build -t pulsar-beam .
 This is an example of a default configurations using in-memory database. Customized `pulsar_beam.yml` and private and public key files can be mounted and passed in as an env variable `PULSAR_BEAM_CONFIG`. The certificate is required to connect to Pulsar with TLS enabled.
 
 ```
-$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -p 3000:3000 --name=pbeam-server pulsar-beam
+$ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -p 8085:8085 --name=pbeam-server pulsar-beam
 ```

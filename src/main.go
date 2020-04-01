@@ -31,7 +31,7 @@ func main() {
 		route.Init()
 
 		c := cors.New(cors.Options{
-			AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8080"},
+			AllowedOrigins:   []string{"http://localhost:8085", "http://localhost:8080"},
 			AllowCredentials: true,
 			AllowedHeaders:   []string{"Authorization", "PulsarTopicUrl"},
 		})
@@ -40,7 +40,7 @@ func main() {
 
 		handler := c.Handler(router)
 		config := util.GetConfig()
-		port := util.AssignString(config.PORT, "8080")
+		port := util.AssignString(config.PORT, "8085")
 		log.Fatal(http.ListenAndServe(":"+port, handler))
 	}
 

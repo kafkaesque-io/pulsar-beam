@@ -147,7 +147,7 @@ jobs:
           ls /etc/ssl/certs
       - name: Start daemon and run e2e test
         env:
-          PORT: 3000
+          PORT: 8085
           PbDbInterval: 15s
           TrustStore: /etc/ssl/certs/ca-certificates.crt
           FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
