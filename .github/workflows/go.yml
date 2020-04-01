@@ -170,7 +170,7 @@ jobs:
           ps -eaf | grep "main"
           cd e2e
           pwd
-          curl -v -H "Authorization: testkey" http://localhost:3000/status
+          curl -v -H "Authorization: testkey" http://localhost:8085/status
           go run ./e2etest.go
 
   docker:
