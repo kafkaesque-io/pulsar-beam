@@ -24,4 +24,4 @@ COPY --from=builder /root/config/pulsar_beam_inmemory_db.yml /root/config/pulsar
 COPY --from=builder /root/src/unit-test/example_p* /root/config/
 
 # Command to run the executable
-CMD ["./pulsar-beam"]
+ENTRYPOINT ["./pulsar-beam"]

@@ -45,6 +45,8 @@ func getRoutes(mode *string) Routes {
 		return append(ReceiverRoutes, RestRoutes...)
 	case util.Receiver:
 		return ReceiverRoutes
+	case util.HTTPOnly:
+		return append(ReceiverRoutes, append(RestRoutes, TokenServerRoutes...)...)
 	case util.TokenServer:
 		return TokenServerRoutes
 	default:

@@ -33,7 +33,7 @@ var pulsarToken,
 	webhookURL,
 	functionSinkTopic string
 
-var restURL = "http://localhost:3000/v2/topic"
+var restURL = "http://localhost:8085/v2/topic"
 
 type received struct{}
 
@@ -132,7 +132,7 @@ func deleteWebhook(key string) {
 
 func produceMessage(sentMessage string) string {
 
-	beamReceiverURL := "http://localhost:3000/v1/firehose"
+	beamReceiverURL := "http://localhost:8085/v1/firehose"
 	originalData := []byte(`{"Data": "` + sentMessage + `"}`)
 	log.Println(string(originalData))
 	// log.Printf("send to topic %s\n", webhookTopic)

@@ -1,5 +1,5 @@
 {
-    "PORT": "3000",
+    "PORT": "8085",
     "CLUSTER": "localhost",
     "PbDbType": "mongo",
     "PulsarPublicKey": "./unit-test/example_public_key.pub",

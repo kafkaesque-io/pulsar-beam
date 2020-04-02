@@ -8,6 +8,9 @@ const Broker = "broker"
 // Receiver exposes endpoint to send events as Pulsar producer
 const Receiver = "receiver"
 
+// HTTPOnly exposes all http endpoints including receiver, token server, and rest api
+const HTTPOnly = "http"
+
 // Hybrid mode both broker and webserver
 const Hybrid = "hybrid"
 
@@ -24,7 +27,7 @@ func IsBrokerRequired(mode *string) bool {
 
 // IsHTTPRouterRequired check whether to initialize http router
 func IsHTTPRouterRequired(mode *string) bool {
-	modes := []string{Hybrid, Receiver, Rest, TokenServer}
+	modes := []string{Hybrid, Receiver, Rest, TokenServer, HTTPOnly}
 	return StrContains(modes, *mode)
 }
 
@@ -35,6 +38,6 @@ func IsBroker(mode *string) bool {
 
 // IsValidMode checks if the mode is supported
 func IsValidMode(mode *string) bool {
-	modes := []string{Broker, Hybrid, Receiver, Rest, TokenServer}
+	modes := []string{Broker, Hybrid, Receiver, Rest, TokenServer, HTTPOnly}
 	return StrContains(modes, *mode)
 }

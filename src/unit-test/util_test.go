@@ -79,7 +79,9 @@ func TestEffectiveRoutes(t *testing.T) {
 	mode = "receiver"
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+prometheusLen), "check receiver required routes")
 	mode = "tokenserver"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check receiver required routes")
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check required tokenserver routes")
+	mode = "http"
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen+receiverRoutesLen+restRoutesLen), "check required http routes")
 }
 
 func TestHTTPRouters(t *testing.T) {
