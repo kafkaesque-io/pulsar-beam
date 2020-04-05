@@ -46,6 +46,10 @@ type Configuration struct {
 
 	// Pulsar CA certificate key store
 	TrustStore string `json:"TrustStore"`
+
+	// TLS
+	CertFile string `json:"CertFile"`
+	KeyFile  string `json:"KeyFile"`
 }
 
 // Config - this server's configuration instance
@@ -101,6 +105,8 @@ func ReadConfigFile(configFile string) {
 	}
 
 	log.Println(Config.PORT, Config.PbDbType, Config.PbDbInterval)
+	log.Println(Config.TrustStore, Config.DbName, Config.DbConnectionStr)
+	log.Println(Config.PulsarPublicKey, Config.PulsarPrivateKey)
 }
 
 //GetConfig returns a reference to the Configuration
