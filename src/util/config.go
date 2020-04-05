@@ -56,16 +56,24 @@ type Configuration struct {
 	// PulsarClusters enforce that Beam only can connect to the specified clusters
 	// It is a comma separated pulsar URL string, so it can be a list of clusters
 	PulsarClusters string `json:"PulsarClusters"`
+
+	// HTTPAuthImpl specifies the jwt authen and authorization algorithm, `noauth` to skip authentication
+	HTTPAuthImpl string `json:"HTTPAuthImpl"`
 }
 
-// AllowedPulsarURLs specifies a list of allowed pulsar URL/cluster
-var AllowedPulsarURLs []string
+var (
+	// AllowedPulsarURLs specifies a list of allowed pulsar URL/cluster
+	AllowedPulsarURLs []string
 
-// Config - this server's configuration instance
-var Config Configuration
+	// SuperRoles are admin level users for jwt authorization
+	SuperRoles []string
 
-// JWTAuth is the RSA key pair for sign and verify JWT
-var JWTAuth *icrypto.RSAKeyPair
+	// Config - this server's configuration instance
+	Config Configuration
+
+	// JWTAuth is the RSA key pair for sign and verify JWT
+	JWTAuth *icrypto.RSAKeyPair
+)
 
 // Init initializes configuration
 func Init() {
@@ -115,6 +123,9 @@ func ReadConfigFile(configFile string) {
 
 	clusterStr := AssignString(Config.PulsarClusters, "")
 	AllowedPulsarURLs = strings.Split(clusterStr, ",")
+
+	superRoleStr := AssignString(Config.SuperRoles, "superuser")
+	SuperRoles = strings.Split(superRoleStr, ",")
 
 	fmt.Printf("port %s, PbDbType %s, DbRefreshInterval %s, TrustStore %s, DbName %s, DbConnectString %s\n",
 		Config.PORT, Config.PbDbType, Config.PbDbInterval, Config.TrustStore, Config.DbName, Config.DbConnectionStr)
