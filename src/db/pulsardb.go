@@ -35,19 +35,26 @@ type PulsarHandler struct {
 func (s *PulsarHandler) Init() error {
 	pulsarURL := util.GetConfig().DbConnectionStr
 	topicName := util.GetConfig().DbName
-	trustStore := util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
 	tokenStr := util.GetConfig().DbPassword
-	token := pulsar.NewAuthenticationToken(tokenStr)
+
+	clientOpt := pulsar.ClientOptions{
+		URL:               pulsarURL,
+		OperationTimeout:  30 * time.Second,
+		ConnectionTimeout: 30 * time.Second,
+	}
+
+	if tokenStr != "" {
+		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
+	}
+
+	// TODO: add code to tell CentOS or Ubuntu
+	trustStore := util.AssignString(util.GetConfig().TrustStore, "") //"/etc/ssl/certs/ca-bundle.crt"
+	if trustStore != "" {
+		clientOpt.TLSTrustCertsFilePath = trustStore
+	}
 
 	var err error
-	s.client, err = pulsar.NewClient(pulsar.ClientOptions{
-		URL:                   pulsarURL,
-		Authentication:        token,
-		TLSTrustCertsFilePath: trustStore,
-		OperationTimeout:      30 * time.Second,
-		ConnectionTimeout:     30 * time.Second,
-	})
-
+	s.client, err = pulsar.NewClient(clientOpt)
 	if err != nil {
 		return err
 	}
