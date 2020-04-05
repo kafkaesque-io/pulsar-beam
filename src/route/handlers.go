@@ -64,9 +64,9 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, topicFN, pulsarURL, err2 := util.ReceiverHeader(&r.Header)
-	if err2 {
-		w.WriteHeader(http.StatusUnauthorized)
+	token, topicFN, pulsarURL, err2 := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
+	if err2 != nil {
+		util.ResponseErrorJSON(err2, w, http.StatusUnauthorized)
 		return
 	}
 	log.Printf("topicFN %s pulsarURL %s", topicFN, pulsarURL)

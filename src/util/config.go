@@ -3,10 +3,12 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 
 	"unicode"
 
@@ -50,7 +52,14 @@ type Configuration struct {
 	// TLS
 	CertFile string `json:"CertFile"`
 	KeyFile  string `json:"KeyFile"`
+
+	// PulsarClusters enforce that Beam only can connect to the specified clusters
+	// It is a comma separated pulsar URL string, so it can be a list of clusters
+	PulsarClusters string `json:"PulsarClusters"`
 }
+
+// AllowedPulsarURLs specifies a list of allowed pulsar URL/cluster
+var AllowedPulsarURLs []string
 
 // Config - this server's configuration instance
 var Config Configuration
@@ -104,9 +113,13 @@ func ReadConfigFile(configFile string) {
 		}
 	}
 
-	log.Println(Config.PORT, Config.PbDbType, Config.PbDbInterval)
-	log.Println(Config.TrustStore, Config.DbName, Config.DbConnectionStr)
-	log.Println(Config.PulsarPublicKey, Config.PulsarPrivateKey)
+	clusterStr := AssignString(Config.PulsarClusters, "")
+	AllowedPulsarURLs = strings.Split(clusterStr, ",")
+
+	fmt.Printf("port %s, PbDbType %s, DbRefreshInterval %s, TrustStore %s, DbName %s, DbConnectString %s\n",
+		Config.PORT, Config.PbDbType, Config.PbDbInterval, Config.TrustStore, Config.DbName, Config.DbConnectionStr)
+	fmt.Printf("PublicKey %s, PrivateKey %s, AllowedPulsarURLs %v\n",
+		Config.PulsarPublicKey, Config.PulsarPrivateKey, AllowedPulsarURLs)
 }
 
 //GetConfig returns a reference to the Configuration

@@ -56,11 +56,21 @@ func ResponseErrorJSON(e error, w http.ResponseWriter, statusCode int) {
 }
 
 // ReceiverHeader parses headers for Pulsar required configuration
-func ReceiverHeader(h *http.Header) (token, topicFN, pulsarURL string, err bool) {
+func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, pulsarURL string, err error) {
 	token = strings.TrimSpace(strings.Replace(h.Get("Authorization"), "Bearer", "", 1))
 	topicFN = h.Get("TopicFn")
 	pulsarURL = h.Get("PulsarUrl")
-	return token, topicFN, pulsarURL, token == "" || topicFN == "" || pulsarURL == ""
+	if len(allowedClusters) > 1 || (len(allowedClusters) == 1 && allowedClusters[0] != "") {
+		if pulsarURL == "" {
+			pulsarURL = allowedClusters[0]
+		} else if !StrContains(allowedClusters, pulsarURL) {
+			return "", "", "", fmt.Errorf("unmatched cluster")
+		}
+	}
+	if token == "" || topicFN == "" || pulsarURL == "" {
+		return "", "", "", fmt.Errorf("missing required token or topic or pulsarURL")
+	}
+	return token, topicFN, pulsarURL, nil
 
 }
 
@@ -85,7 +95,7 @@ func ReportError(err error) error {
 // StrContains check if a string is contained in an array of string
 func StrContains(strs []string, str string) bool {
 	for _, v := range strs {
-		if v == str {
+		if strings.TrimSpace(v) == strings.TrimSpace(str) {
 			return true
 		}
 	}

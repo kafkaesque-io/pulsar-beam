@@ -60,17 +60,23 @@ func (c *PulsarClient) GetClient(url, tokenStr string) (pulsar.Client, error) {
 		return c.client, nil
 	}
 
-	// TODO: add code to tell CentOS or Ubuntu
-	trustStore := util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
-	token := pulsar.NewAuthenticationToken(tokenStr)
+	clientOpt := pulsar.ClientOptions{
+		URL:               url,
+		OperationTimeout:  time.Duration(clientOpsTimeout) * time.Second,
+		ConnectionTimeout: time.Duration(clientConnectTimeout) * time.Second,
+	}
 
-	driver, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL:                   url,
-		Authentication:        token,
-		TLSTrustCertsFilePath: trustStore,
-		OperationTimeout:      time.Duration(clientOpsTimeout) * time.Second,
-		ConnectionTimeout:     time.Duration(clientConnectTimeout) * time.Second,
-	})
+	if tokenStr != "" {
+		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
+	}
+
+	// TODO: add code to tell CentOS or Ubuntu
+	trustStore := util.AssignString(util.GetConfig().TrustStore, "") //"/etc/ssl/certs/ca-bundle.crt"
+	if trustStore != "" {
+		clientOpt.TLSTrustCertsFilePath = trustStore
+	}
+
+	driver, err := pulsar.NewClient(clientOpt)
 
 	if err != nil {
 		log.Println(err)
