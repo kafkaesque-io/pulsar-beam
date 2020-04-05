@@ -9,29 +9,39 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
+var (
+	// Rate is the default global rate limit
+	// This rate only limits the rate hitting on endpoint
+	// It does not limit the underline resource access
+	Rate = NewSema(200)
+)
+
 // AuthFunc is a function type to allow pluggable authentication middleware
 type AuthFunc func(next http.Handler) http.Handler
 
-// Rate is the default global rate limit
-// This rate only limits the rate hitting on endpoint
-// It does not limit the underline resource access
-var Rate = NewSema(200)
-
 // AuthVerifyJWT Authenticate middleware function
 func AuthVerifyJWT(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenStr := strings.TrimSpace(strings.Replace(r.Header.Get("Authorization"), "Bearer", "", 1))
-		subjects, err := util.JWTAuth.GetTokenSubject(tokenStr)
-
-		if err == nil {
-			log.Println("Authenticated")
-			r.Header.Set("injectedSubs", subjects)
+	switch util.GetConfig().HTTPAuthImpl {
+	case "noauth":
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Header.Set("injectedSubs", util.SuperRoles[0])
 			next.ServeHTTP(w, r)
-		} else {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		}
+		})
+	default:
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenStr := strings.TrimSpace(strings.Replace(r.Header.Get("Authorization"), "Bearer", "", 1))
+			subjects, err := util.JWTAuth.GetTokenSubject(tokenStr)
 
-	})
+			if err == nil {
+				log.Println("Authenticated")
+				r.Header.Set("injectedSubs", subjects)
+				next.ServeHTTP(w, r)
+			} else {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			}
+
+		})
+	}
 }
 
 // AuthHeaderRequired is a very weak auth to verify token existence only.

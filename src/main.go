@@ -12,22 +12,22 @@ import (
 	"github.com/rs/cors"
 )
 
-var mode = flag.String("mode", "hybrid", "server running mode")
+var mode = util.AssignString(os.Getenv("ProcessMode"), *flag.String("mode", "hybrid", "server running mode"))
 
 func main() {
 	exit := make(chan bool) // future use to exit the main program if in broker only mode
 	util.Init()
 
 	flag.Parse()
-	log.Println("start server mode ", *mode)
-	if !util.IsValidMode(mode) {
+	log.Println("start server mode ", mode)
+	if !util.IsValidMode(&mode) {
 		log.Panic("Unsupported server mode")
 	}
 
-	if util.IsBrokerRequired(mode) {
+	if util.IsBrokerRequired(&mode) {
 		broker.Init()
 	}
-	if util.IsHTTPRouterRequired(mode) {
+	if util.IsHTTPRouterRequired(&mode) {
 		route.Init()
 
 		c := cors.New(cors.Options{
@@ -36,15 +36,22 @@ func main() {
 			AllowedHeaders:   []string{"Authorization", "PulsarTopicUrl"},
 		})
 
-		router := route.NewRouter(mode)
+		router := route.NewRouter(&mode)
 
 		handler := c.Handler(router)
 		config := util.GetConfig()
 		port := util.AssignString(config.PORT, "8085")
-		log.Fatal(http.ListenAndServe(":"+port, handler))
+		certFile := util.GetConfig().CertFile
+		keyFile := util.GetConfig().KeyFile
+		if len(certFile) > 1 && len(keyFile) > 1 {
+			log.Printf("load certFile %s and keyFile %s\n", certFile, keyFile)
+			log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, handler))
+		} else {
+			log.Fatal(http.ListenAndServe(":"+port, handler))
+		}
 	}
 
-	for util.IsBroker(mode) {
+	for util.IsBroker(&mode) {
 		select {
 		case <-exit:
 			os.Exit(2)

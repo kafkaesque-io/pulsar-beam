@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
@@ -126,19 +127,52 @@ func TestMainControlMode(t *testing.T) {
 
 func TestReceiverHeader(t *testing.T) {
 	header := http.Header{}
-	header.Set("Authorization", "Bearer erfagagagag")
+	// header.Set("Authorization", "Bearer erfagagagag")
 	header.Set("PulsarUrl", "pulsar://mydomain.net:6650")
-	_, _, _, result := ReceiverHeader(&header)
-	assert(t, result, "Test missing TopicFn")
+	_, _, _, result := ReceiverHeader(strings.Split("", ","), &header)
+	assert(t, result != nil, "expected error because of missing TopicFn")
+
+	header.Set("TopicFn", "http://target.net/route")
+	var token, webhook string
+	token, webhook, _, result = ReceiverHeader(strings.Split("", ","), &header)
+	errNil(t, result)
+	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
+	assert(t, token == "", "test all headers presence")
+
+	header.Set("Authorization", "Bearer erfagagagag")
+
+	allowedPulsarURLs := strings.Split("pulsar://mydomain.net:6650", ",")
+	_, webhook, _, result = ReceiverHeader(allowedPulsarURLs, &header)
+	errNil(t, result)
+	assert(t, webhook == header.Get("TopicFn"), "pulsarURL in header matches allowed pulsar Cluster URL")
+
+	allowedPulsarURLs = strings.Split("pulsar://kafkaesque.net:6650", ",")
+	_, _, _, result = ReceiverHeader(allowedPulsarURLs, &header)
+	assert(t, result != nil, "pulsarURL in header does not match allowed pulsar Cluster URL")
+
+	allowedPulsarURLs = strings.Split("pulsar://kafkaesque.net:6650, pulsar://mydomain.net:6650", ",")
+	_, webhook, _, result = ReceiverHeader(allowedPulsarURLs, &header)
+	errNil(t, result)
+	assert(t, webhook == header.Get("TopicFn"), "pulsarURL in header matches one of allowed pulsar Cluster URLs")
+}
+
+func TestDefaultPulsarURLInReceiverHeader(t *testing.T) {
+	allowedPulsarURLs := strings.Split("pulsar+ssl://kafkaesque.net:6651", ",")
+	header := http.Header{}
+	header.Set("Authorization", "Bearer erfagagagag")
+	_, _, _, result := ReceiverHeader(allowedPulsarURLs, &header)
+	assert(t, result != nil, "expected error because of missing TopicFn")
 
 	header.Set("TopicFn", "http://target.net/route")
 	var webhook string
-	_, webhook, _, result = ReceiverHeader(&header)
-	assert(t, !result, "test all headers presence")
+	_, webhook, pulsarURL, result := ReceiverHeader(allowedPulsarURLs, &header)
+	errNil(t, result)
 	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
+	assert(t, pulsarURL == "pulsar+ssl://kafkaesque.net:6651", "test all headers presence")
+	assert(t, "" == header.Get("PulsarUrl"), "ensure PulsarUrl is empty")
 }
 
-func TestThreaSafeMap(t *testing.T) {
+func TestThreadSafeMap(t *testing.T) {
 	// TODO add more goroutine to test concurrency
 
 	_, rc := broker.ReadWebhook("first")

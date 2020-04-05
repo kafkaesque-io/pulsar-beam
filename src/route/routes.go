@@ -25,7 +25,7 @@ var TokenServerRoutes = Routes{
 	Route{
 		"token server",
 		http.MethodGet,
-		"/subject9", //TODO: use `subject` once we could replace the existing token server
+		"/subject", //TODO: use `subject` to replace the existing token server
 		TokenSubjectHandler,
 		middleware.AuthVerifyJWT,
 	},
@@ -56,7 +56,7 @@ var ReceiverRoutes = Routes{
 		"POST",
 		"/v1/firehose",
 		ReceiveHandler,
-		middleware.AuthHeaderRequired,
+		middleware.NoAuth,
 	},
 }
 

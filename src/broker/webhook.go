@@ -118,8 +118,8 @@ func pushWebhook(url string, data []byte, headers []string) (int, *http.Response
 }
 
 func toPulsar(r *http.Response) {
-	token, topicFN, pulsarURL, err := util.ReceiverHeader(&r.Header)
-	if err {
+	token, topicFN, pulsarURL, err := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
+	if err != nil {
 		return
 	}
 	// log.Printf("topicURL %s pulsarURL %s", topicFN, pulsarURL)

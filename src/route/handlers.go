@@ -17,13 +17,10 @@ import (
 )
 
 var singleDb db.Db
-var superRoles []string
 
 // Init initializes database
 func Init() {
 	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
-	superRoleStr := util.AssignString(util.GetConfig().SuperRoles, "superuser")
-	superRoles = strings.Split(superRoleStr, ",")
 }
 
 // TokenSubjectHandler issues new token
@@ -35,7 +32,7 @@ func TokenSubjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if util.StrContains(superRoles, util.AssignString(r.Header.Get("injectedSubs"), "BOGUSROLE")) {
+	if util.StrContains(util.SuperRoles, util.AssignString(r.Header.Get("injectedSubs"), "BOGUSROLE")) {
 		tokenString, err := util.JWTAuth.GenerateToken(subject)
 		if err != nil {
 			util.ResponseErrorJSON(errors.New("failed to generate token"), w, http.StatusInternalServerError)
@@ -64,9 +61,9 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, topicFN, pulsarURL, err2 := util.ReceiverHeader(&r.Header)
-	if err2 {
-		w.WriteHeader(http.StatusUnauthorized)
+	token, topicFN, pulsarURL, err2 := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
+	if err2 != nil {
+		util.ResponseErrorJSON(err2, w, http.StatusUnauthorized)
 		return
 	}
 	log.Printf("topicFN %s pulsarURL %s", topicFN, pulsarURL)
@@ -227,7 +224,7 @@ func VerifySubject(topicFN, tokenSub string) bool {
 		log.Printf(" auth verify tenant %s token sub %s", tenant, tokenSub)
 		return false
 	}
-	subjects := append(superRoles, tenant)
+	subjects := append(util.SuperRoles, tenant)
 
 	return util.StrContains(subjects, tokenSub)
 }
