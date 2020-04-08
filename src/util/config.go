@@ -88,8 +88,6 @@ func Init() {
 	log.SetLevel(logLevel(Config.LogLevel))
 
 	log.Warnf("Configuration built from file - %s", configFile)
-	log.Infof("Configuration built from file - %s", configFile)
-	log.Debugf("Configuration built from file - %s", configFile)
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
 }
 
@@ -141,8 +139,10 @@ func ReadConfigFile(configFile string) {
 
 	fmt.Printf("port %s, PbDbType %s, DbRefreshInterval %s, TrustStore %s, DbName %s, DbConnectString %s\n",
 		Config.PORT, Config.PbDbType, Config.PbDbInterval, Config.TrustStore, Config.DbName, Config.DbConnectionStr)
-	fmt.Printf("PublicKey %s, PrivateKey %s, AllowedPulsarURLs %v\n",
-		Config.PulsarPublicKey, Config.PulsarPrivateKey, AllowedPulsarURLs)
+	fmt.Printf("PublicKey %s, PrivateKey %s\n",
+		Config.PulsarPublicKey, Config.PulsarPrivateKey)
+	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v\n",
+		Config.PulsarBrokerURL, AllowedPulsarURLs)
 }
 
 //GetConfig returns a reference to the Configuration

@@ -19,6 +19,8 @@ import (
 
 var singleDb db.Db
 
+const subDelimiter = "-"
+
 // Init initializes database
 func Init() {
 	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
@@ -72,7 +74,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	pulsarAsync := r.URL.Query().Get("mode") == "async"
 	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b, pulsarAsync)
 	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
+		util.ResponseErrorJSON(err, w, http.StatusServiceUnavailable)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -87,13 +89,14 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: we may fix the problem that allows negatively look up by another tenant
 	doc, err := singleDb.GetByKey(topicKey)
 	if err != nil {
 		log.Errorf("get topic error %v", err)
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
-	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -126,7 +129,7 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -213,10 +216,10 @@ func getTopicKey(r *http.Request) (string, error) {
 	return topicKey, err
 }
 
-// VerifySubject verifies the subject can meet the requirement.
-func VerifySubject(topicFN, tokenSub string) bool {
+// VerifySubjectBasedOnTopic verifies the subject can meet the requirement.
+func VerifySubjectBasedOnTopic(topicFN, tokenSub string) bool {
 	parts := strings.Split(topicFN, "/")
-	if len(parts) < 3 {
+	if len(parts) < 4 {
 		return false
 	}
 	tenant := parts[2]
@@ -224,7 +227,32 @@ func VerifySubject(topicFN, tokenSub string) bool {
 		log.Infof(" auth verify tenant %s token sub %s", tenant, tokenSub)
 		return false
 	}
-	subjects := append(util.SuperRoles, tenant)
+	// subjects := append(util.SuperRoles, tenant)
+	return VerifySubject(tenant, tokenSub)
+}
 
-	return util.StrContains(subjects, tokenSub)
+// VerifySubject verifies the subject can meet the requirement.
+func VerifySubject(requiredSubject, tokenSubjects string) bool {
+	for _, v := range strings.Split(tokenSubjects, ",") {
+		if util.StrContains(util.SuperRoles, v) {
+			return true
+		}
+		sub := extractTenant(v)
+		if sub != "" && requiredSubject == sub {
+			return true
+		}
+	}
+
+	return false
+}
+
+func extractTenant(tokenSub string) string {
+	// expect - in subject unless it is superuser
+	parts := strings.Split(tokenSub, subDelimiter)
+	if len(parts) < 2 {
+		return parts[0]
+	}
+
+	validLength := len(parts) - 1
+	return strings.Join(parts[:validLength], subDelimiter)
 }

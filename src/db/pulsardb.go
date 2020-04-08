@@ -27,7 +27,7 @@ import (
 // a map of TopicConfig struct with Key, hash of pulsar URL and topic full name, is the key
 var topics = make(map[string]model.TopicConfig)
 
-// PulsarHandler is the mongo database driver
+// PulsarHandler is the Pulsar database driver
 type PulsarHandler struct {
 	client   pulsar.Client
 	producer pulsar.Producer
@@ -38,7 +38,10 @@ type PulsarHandler struct {
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
 	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
-	pulsarURL := util.AssignString(util.GetConfig().DbConnectionStr, util.GetConfig().PulsarBrokerURL)
+	pulsarURL := util.GetConfig().PulsarBrokerURL
+	if strings.HasPrefix(util.GetConfig().DbConnectionStr, "pulsar") {
+		pulsarURL = util.GetConfig().DbConnectionStr
+	}
 	topicName := util.GetConfig().DbName
 	tokenStr := util.GetConfig().DbPassword
 
@@ -129,7 +132,7 @@ func (s *PulsarHandler) Close() error {
 	return nil
 }
 
-//NewPulsarHandler initialize a Mongo Db
+//NewPulsarHandler initialize a Pulsar Db
 func NewPulsarHandler() (*PulsarHandler, error) {
 	handler := PulsarHandler{}
 	err := handler.Init()
