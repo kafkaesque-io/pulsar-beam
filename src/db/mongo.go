@@ -3,11 +3,13 @@ package db
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+
+	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,6 +20,7 @@ import (
 type MongoDb struct {
 	client     *mongo.Client
 	collection *mongo.Collection
+	logger     *log.Entry
 }
 
 var connectionString string = "mongodb://localhost:27017"
@@ -26,9 +29,10 @@ var collectionName string = "topics"
 
 //Init is a Db interface method.
 func (s *MongoDb) Init() error {
+	s.logger = log.WithFields(log.Fields{"app": "mongodb"})
 	dbName = util.AssignString(util.Config.CLUSTER, dbName)
 	connectionString = util.AssignString(util.Config.DbConnectionStr, connectionString)
-	log.Printf("connecting to %s", connectionString)
+	s.logger.Warnf("connecting to %s", connectionString)
 	var err error
 	clientOptions := options.Client().ApplyURI(connectionString)
 	// ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
@@ -39,11 +43,11 @@ func (s *MongoDb) Init() error {
 
 	err = s.client.Ping(context.TODO(), readpref.Primary())
 	if err != nil {
-		log.Println("mongodb ping failed")
+		s.logger.Errorf("mongodb ping failed %s", err.Error())
 		return err
 	}
 
-	log.Println("connected to mongodb", dbName)
+	s.logger.Infof("connected to mongodb %s", dbName)
 
 	s.collection = s.client.Database(dbName).Collection(collectionName)
 
@@ -54,17 +58,17 @@ func (s *MongoDb) Init() error {
 	}
 	_, err = indexView.CreateOne(context.Background(), indexMode)
 	if err != nil {
-		log.Println("database index creation failed")
+		s.logger.Errorf("database index creation failed %s", err.Error())
 		return err
 	}
 
-	log.Printf("mongo database name %v, collection %v", dbName, collectionName)
+	s.logger.Infof("mongo database name %v, collection %v", dbName, collectionName)
 	return nil
 }
 
 //Sync is a Db interface method.
 func (s *MongoDb) Sync() error {
-	log.Println("sync")
+	s.logger.Infof("sync")
 	return nil
 }
 
@@ -104,11 +108,12 @@ func (s *MongoDb) Create(topicCfg *model.TopicConfig) (string, error) {
 	insertResult, err := s.collection.InsertOne(context.Background(), topicCfg)
 
 	if err != nil {
-		// log.Println(err)
 		return "", err
 	}
 
-	log.Println("Inserted a Single Record ", insertResult.InsertedID, topicCfg.Key)
+	if log.GetLevel() == log.DebugLevel {
+		s.logger.Debugf("Inserted a Single Record %v, %s", insertResult.InsertedID, topicCfg.Key)
+	}
 	return topicCfg.Key, nil
 }
 
@@ -152,10 +157,12 @@ func (s *MongoDb) Load() ([]*model.TopicConfig, error) {
 		var ele model.TopicConfig
 		err := cursor.Decode(&ele)
 		if err != nil {
-			log.Println("failed to decode document ", err)
+			s.logger.Errorf("failed to decode document %s", err.Error())
 		} else {
 			results = append(results, &ele)
-			log.Printf("from mongo %s %s %s", ele.TopicFullName, ele.PulsarURL, ele.Webhooks[0].URL)
+			if log.GetLevel() == log.DebugLevel {
+				s.logger.Debugf("from mongo %s %s %s", ele.TopicFullName, ele.PulsarURL, ele.Webhooks[0].URL)
+			}
 		}
 	}
 
@@ -175,7 +182,9 @@ func (s *MongoDb) Update(topicCfg *model.TopicConfig) (string, error) {
 	}
 
 	if !exists {
-		log.Println("not exists so to create one")
+		if log.GetLevel() == log.DebugLevel {
+			s.logger.Debugf("not exists so to create one")
+		}
 		return s.Create(topicCfg)
 	}
 
@@ -202,7 +211,9 @@ func (s *MongoDb) Update(topicCfg *model.TopicConfig) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Println("upsert", result)
+	if log.GetLevel() == log.DebugLevel {
+		s.logger.Debugf("upsert %v", result)
+	}
 	return key, nil
 
 }

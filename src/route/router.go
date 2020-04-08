@@ -1,13 +1,13 @@
 package route
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/middleware"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // NewRouter - create new router for HTTP routing
@@ -30,7 +30,7 @@ func NewRouter(mode *string) *mux.Router {
 	// TODO rate limit can be added per route basis
 	router.Use(middleware.LimitRate)
 
-	log.Println("router added")
+	log.Infof("router added")
 	return router
 }
 

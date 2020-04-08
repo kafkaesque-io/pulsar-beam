@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"os"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/route"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
 	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 )
 
 var mode = util.AssignString(os.Getenv("ProcessMode"), *flag.String("mode", "hybrid", "server running mode"))
@@ -19,7 +19,7 @@ func main() {
 	util.Init()
 
 	flag.Parse()
-	log.Println("start server mode ", mode)
+	log.Warnf("start server mode %s", mode)
 	if !util.IsValidMode(&mode) {
 		log.Panic("Unsupported server mode")
 	}
@@ -44,7 +44,7 @@ func main() {
 		certFile := util.GetConfig().CertFile
 		keyFile := util.GetConfig().KeyFile
 		if len(certFile) > 1 && len(keyFile) > 1 {
-			log.Printf("load certFile %s and keyFile %s\n", certFile, keyFile)
+			log.Infof("load certFile %s and keyFile %s\n", certFile, keyFile)
 			log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, handler))
 		} else {
 			log.Fatal(http.ListenAndServe(":"+port, handler))

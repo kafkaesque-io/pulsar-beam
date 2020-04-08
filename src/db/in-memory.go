@@ -2,10 +2,11 @@ package db
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /**
@@ -109,7 +110,7 @@ func (s *InMemoryHandler) Update(topicCfg *model.TopicConfig) (string, error) {
 	v.UpdatedAt = time.Now()
 	v.Webhooks = topicCfg.Webhooks
 
-	log.Println("upsert", key)
+	log.Infof("upsert %s", key)
 	topics[topicCfg.Key] = *topicCfg
 	return key, nil
 

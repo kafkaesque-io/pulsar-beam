@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var singleDb db.Db
@@ -66,7 +67,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err2, w, http.StatusUnauthorized)
 		return
 	}
-	log.Printf("topicFN %s pulsarURL %s", topicFN, pulsarURL)
+	log.Infof("topicFN %s pulsarURL %s", topicFN, pulsarURL)
 
 	pulsarAsync := r.URL.Query().Get("mode") == "async"
 	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b, pulsarAsync)
@@ -88,7 +89,7 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := singleDb.GetByKey(topicKey)
 	if err != nil {
-		log.Printf("get topic error %v", err)
+		log.Errorf("get topic error %v", err)
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
@@ -132,7 +133,6 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := singleDb.Update(&doc)
 	if err != nil {
-		// log.Println(err)
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
@@ -145,7 +145,7 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		resJSON, err := json.Marshal(savedDoc)
 		if err != nil {
-			log.Printf("marshal updated topic error %v", err)
+			log.Errorf("marshal updated topic error %v", err)
 			return
 		}
 		w.Write(resJSON)
@@ -165,7 +165,7 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := singleDb.GetByKey(topicKey)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("failed to get topic based on key %s err: %v", topicKey, err)
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
@@ -221,7 +221,7 @@ func VerifySubject(topicFN, tokenSub string) bool {
 	}
 	tenant := parts[2]
 	if len(tenant) < 1 {
-		log.Printf(" auth verify tenant %s token sub %s", tenant, tokenSub)
+		log.Infof(" auth verify tenant %s token sub %s", tenant, tokenSub)
 		return false
 	}
 	subjects := append(util.SuperRoles, tenant)

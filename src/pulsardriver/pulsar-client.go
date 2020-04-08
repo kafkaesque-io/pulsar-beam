@@ -2,12 +2,12 @@ package pulsardriver
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // ClientCache caches a list Pulsar clients
@@ -79,8 +79,11 @@ func (c *PulsarClient) GetClient(url, tokenStr string) (pulsar.Client, error) {
 	driver, err := pulsar.NewClient(clientOpt)
 
 	if err != nil {
-		log.Println(err)
+		log.Errorf("failed instantiate pulsar client %v", err)
 		return nil, fmt.Errorf("Could not instantiate Pulsar client: %v", err)
+	}
+	if log.GetLevel() == log.DebugLevel {
+		log.Debugf("pulsar client url %s\n token %s", url, tokenStr)
 	}
 
 	c.client = driver

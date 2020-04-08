@@ -10,11 +10,11 @@ import (
 	"encoding/pem"
 	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
 )
 
 // RSAKeyPair for JWT token sign and verification
@@ -228,7 +228,7 @@ func getDataFromKeyFile(file string) ([]byte, error) {
 func getPrivateKey(file string) *rsa.PrivateKey {
 	data, err := getDataFromKeyFile(file)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to load private key %v", err)
 	}
 
 	return parseX509PKCS8PrivateKey(data)
@@ -237,7 +237,7 @@ func getPrivateKey(file string) *rsa.PrivateKey {
 func getPublicKey(file string) *rsa.PublicKey {
 	data, err := getDataFromKeyFile(file)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to load public key %v", err)
 	}
 
 	return parseX509PKIXPublicKey(data)

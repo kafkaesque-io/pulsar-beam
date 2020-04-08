@@ -1,7 +1,6 @@
 package pulsardriver
 
 import (
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -9,6 +8,8 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ConsumerCache caches a list Pulsar prudcers
@@ -68,7 +69,7 @@ func CancelPulsarConsumer(key string) {
 		c.Close()
 		delete(ConsumerCache, key)
 	} else {
-		log.Printf("cancel consumer failed to locate consumer key %v", key)
+		log.Errorf("cancel consumer failed to locate consumer key %v", key)
 	}
 }
 
@@ -100,18 +101,22 @@ func (c *PulsarConsumer) GetConsumer() (pulsar.Consumer, error) {
 	if err != nil {
 		return nil, err
 	}
-	p, err := driver.Subscribe(pulsar.ConsumerOptions{
+
+	if log.GetLevel() == log.DebugLevel {
+		log.Debugf("topic %s, subscriptionName %s\ninitPosition %v, subscriptionType %v\n", c.topic, c.subscriptionName, c.initPosition, c.subscriptionType)
+	}
+	c.consumer, err = driver.Subscribe(pulsar.ConsumerOptions{
 		Topic:                       c.topic,
 		SubscriptionName:            c.subscriptionName,
 		SubscriptionInitialPosition: c.initPosition,
 		Type:                        c.subscriptionType,
 	})
 	if err != nil {
+		log.Errorf("consumer subscribe error:%s\n", err.Error())
 		return nil, err
 	}
 
-	c.consumer = p
-	return p, nil
+	return c.consumer, nil
 }
 
 // UpdateTime updates all time stamps in the object

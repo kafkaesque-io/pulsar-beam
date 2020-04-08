@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /**
@@ -29,10 +30,12 @@ type PulsarHandler struct {
 	client   pulsar.Client
 	producer pulsar.Producer
 	reader   pulsar.Reader
+	logger   *log.Entry
 }
 
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
+	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
 	pulsarURL := util.GetConfig().DbConnectionStr
 	topicName := util.GetConfig().DbName
 	tokenStr := util.GetConfig().DbPassword
@@ -86,15 +89,15 @@ func (s *PulsarHandler) Init() error {
 				if err := json.Unmarshal(msg.Payload(), &doc); err == nil {
 					if doc.TopicStatus != model.Deleted {
 						topics[doc.Key] = doc
-						log.Println(topics[doc.Key].PulsarURL)
+						s.logger.Infof(topics[doc.Key].PulsarURL)
 					} else {
 						delete(topics, doc.Key)
 					}
 				} else {
-					log.Printf("json unmarshal error %v", err)
+					s.logger.Errorf("json unmarshal error %v", err)
 				}
 			} else {
-				log.Printf("pulsar db reader err %v", err)
+				s.logger.Errorf("pulsar db reader err %v", err)
 				// Report and fix ...
 			}
 
@@ -163,7 +166,7 @@ func (s *PulsarHandler) updateCacheAndPulsar(topicCfg *model.TopicConfig) (strin
 	}
 	// s.producer.Flush() do not use it's a blocking call
 
-	log.Println("send to Pulsar ", topicCfg.Key)
+	s.logger.Infof("send to Pulsar %s", topicCfg.Key)
 
 	topics[topicCfg.Key] = *topicCfg
 	return topicCfg.Key, nil
@@ -214,7 +217,7 @@ func (s *PulsarHandler) Update(topicCfg *model.TopicConfig) (string, error) {
 	v.UpdatedAt = time.Now()
 	v.Webhooks = topicCfg.Webhooks
 
-	log.Println("upsert", key)
+	s.logger.Infof("upsert %s", key)
 	return s.updateCacheAndPulsar(topicCfg)
 
 }

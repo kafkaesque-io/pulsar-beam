@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ResponseErr - Error struct for Http response
@@ -88,7 +89,7 @@ func AssignString(values ...string) string {
 
 // ReportError logs error
 func ReportError(err error) error {
-	log.Printf("error %v", err)
+	log.Errorf("error %v", err)
 	return err
 }
 
