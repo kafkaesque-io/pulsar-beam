@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -36,7 +38,7 @@ type PulsarHandler struct {
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
 	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
-	pulsarURL := util.GetConfig().DbConnectionStr
+	pulsarURL := util.AssignString(util.GetConfig().DbConnectionStr, util.GetConfig().PulsarBrokerURL)
 	topicName := util.GetConfig().DbName
 	tokenStr := util.GetConfig().DbPassword
 
@@ -50,9 +52,12 @@ func (s *PulsarHandler) Init() error {
 		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
 	}
 
-	// TODO: add code to tell CentOS or Ubuntu
-	trustStore := util.AssignString(util.GetConfig().TrustStore, "") //"/etc/ssl/certs/ca-bundle.crt"
-	if trustStore != "" {
+	if strings.HasPrefix(pulsarURL, "pulsar+ssl://") {
+		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
+		if trustStore == "" {
+
+			return fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
+		}
 		clientOpt.TLSTrustCertsFilePath = trustStore
 	}
 

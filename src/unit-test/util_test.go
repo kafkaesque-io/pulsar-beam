@@ -146,7 +146,7 @@ func TestReceiverHeader(t *testing.T) {
 	errNil(t, result)
 	assert(t, webhook == header.Get("TopicFn"), "pulsarURL in header matches allowed pulsar Cluster URL")
 
-	allowedPulsarURLs = strings.Split("pulsar://kafkaesque.net:6650", ",")
+	allowedPulsarURLs = strings.Split("pulsar://kafkaesque.net:6650,", ",")
 	_, _, _, result = ReceiverHeader(allowedPulsarURLs, &header)
 	assert(t, result != nil, "pulsarURL in header does not match allowed pulsar Cluster URL")
 

@@ -2,6 +2,7 @@ package pulsardriver
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -70,9 +71,11 @@ func (c *PulsarClient) GetClient(url, tokenStr string) (pulsar.Client, error) {
 		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
 	}
 
-	// TODO: add code to tell CentOS or Ubuntu
-	trustStore := util.AssignString(util.GetConfig().TrustStore, "") //"/etc/ssl/certs/ca-bundle.crt"
-	if trustStore != "" {
+	if strings.HasPrefix(url, "pulsar+ssl://") {
+		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
+		if trustStore == "" {
+			return nil, fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
+		}
 		clientOpt.TLSTrustCertsFilePath = trustStore
 	}
 

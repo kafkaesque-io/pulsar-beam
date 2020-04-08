@@ -42,6 +42,7 @@ type Configuration struct {
 	PulsarPublicKey  string `json:"PulsarPublicKey"`
 	PulsarPrivateKey string `json:"PulsarPrivateKey"`
 	SuperRoles       string `json:"SuperRoles"`
+	PulsarBrokerURL  string `json:"PulsarBrokerURL"`
 
 	// Webhook consumers pool checked interval to stop deleted consumers and start new ones
 	// default value 180s
@@ -131,6 +132,9 @@ func ReadConfigFile(configFile string) {
 
 	clusterStr := AssignString(Config.PulsarClusters, "")
 	AllowedPulsarURLs = strings.Split(clusterStr, ",")
+	if Config.PulsarBrokerURL != "" {
+		AllowedPulsarURLs = append([]string{Config.PulsarBrokerURL}, AllowedPulsarURLs...)
+	}
 
 	superRoleStr := AssignString(Config.SuperRoles, "superuser")
 	SuperRoles = strings.Split(superRoleStr, ",")
