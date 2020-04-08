@@ -64,7 +64,8 @@ func Init() {
 	durationStr := util.AssignString(util.GetConfig().PbDbInterval, "180s")
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
-		log.Panic(err)
+		log.Errorf("specified duration %s error %v", durationStr, err)
+		duration, _ = time.ParseDuration("180s")
 	}
 	log.Warnf("beam database pull every %.0f seconds", duration.Seconds())
 
