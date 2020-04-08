@@ -159,7 +159,7 @@ func TestSubjectMatch(t *testing.T) {
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp", "picasso"), "")
 	assert(t, !VerifySubjectBasedOnTopic("picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
-	// Please Note subject name picasso-monet will FAIL
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet"), "")
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet-1234"), "")
 	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "myadmin"), "")
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234"), "")

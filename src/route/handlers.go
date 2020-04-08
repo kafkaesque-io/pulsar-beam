@@ -232,9 +232,13 @@ func VerifySubjectBasedOnTopic(topicFN, tokenSub string) bool {
 }
 
 // VerifySubject verifies the subject can meet the requirement.
+// Subject verification requires role or tenant name in the jwt subject
 func VerifySubject(requiredSubject, tokenSubjects string) bool {
 	for _, v := range strings.Split(tokenSubjects, ",") {
 		if util.StrContains(util.SuperRoles, v) {
+			return true
+		}
+		if requiredSubject == v {
 			return true
 		}
 		sub := extractTenant(v)
