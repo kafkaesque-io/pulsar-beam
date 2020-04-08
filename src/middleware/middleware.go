@@ -2,11 +2,12 @@ package middleware
 
 //middleware includes auth, rate limit, and etc.
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -33,7 +34,7 @@ func AuthVerifyJWT(next http.Handler) http.Handler {
 			subjects, err := util.JWTAuth.GetTokenSubject(tokenStr)
 
 			if err == nil {
-				log.Println("Authenticated")
+				log.Infof("Authenticated with subjects %s", subjects)
 				r.Header.Set("injectedSubs", subjects)
 				next.ServeHTTP(w, r)
 			} else {

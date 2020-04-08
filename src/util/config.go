@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/kafkaesque-io/pulsar-beam/src/icrypto"
+	log "github.com/sirupsen/logrus"
 )
 
 // DefaultConfigFile - default config file
@@ -22,10 +22,11 @@ const DefaultConfigFile = "../config/pulsar_beam.yml"
 
 // Configuration - this server's configuration
 type Configuration struct {
-	PORT    string `json:"PORT"`
-	CLUSTER string `json:"CLUSTER"`
-	User    string `json:"User"`
-	Pass    string `json:"Pass"`
+	PORT     string `json:"PORT"`
+	CLUSTER  string `json:"CLUSTER"`
+	LogLevel string `json:"LogLevel"`
+	User     string `json:"User"`
+	Pass     string `json:"Pass"`
 
 	// DbName is the database name in mongo or topic name
 	DbName string `json:"DbName"`
@@ -73,14 +74,21 @@ var (
 
 	// JWTAuth is the RSA key pair for sign and verify JWT
 	JWTAuth *icrypto.RSAKeyPair
+
+	// L is the logger
+	L *log.Logger
 )
 
 // Init initializes configuration
 func Init() {
 	configFile := AssignString(os.Getenv("PULSAR_BEAM_CONFIG"), DefaultConfigFile)
-	log.Printf("Configuration built from file - %s", configFile)
 	ReadConfigFile(configFile)
 
+	log.SetLevel(logLevel(Config.LogLevel))
+
+	log.Warnf("Configuration built from file - %s", configFile)
+	log.Infof("Configuration built from file - %s", configFile)
+	log.Debugf("Configuration built from file - %s", configFile)
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
 }
 
@@ -88,7 +96,7 @@ func Init() {
 func ReadConfigFile(configFile string) {
 	fileBytes, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		log.Printf("failed to load configuration file %s", configFile)
+		fmt.Printf("failed to load configuration file %s", configFile)
 		panic(err)
 	}
 
@@ -136,6 +144,21 @@ func ReadConfigFile(configFile string) {
 //GetConfig returns a reference to the Configuration
 func GetConfig() *Configuration {
 	return &Config
+}
+
+func logLevel(level string) log.Level {
+	switch strings.TrimSpace(strings.ToLower(level)) {
+	case "debug":
+		return log.DebugLevel
+	case "warn":
+		return log.WarnLevel
+	case "error":
+		return log.ErrorLevel
+	case "fatal":
+		return log.FatalLevel
+	default:
+		return log.InfoLevel
+	}
 }
 
 var jsonPrefix = []byte("{")

@@ -3,8 +3,9 @@ package icrypto
 // encryption and decryption utility functions
 import (
 	"encoding/base64"
-	"fmt"
 	"math/rand"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var e AES
@@ -25,7 +26,6 @@ func EncryptWithBase64(str string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	//fmt.Printf("original string %s \n", str)
 	encoded := base64.StdEncoding.EncodeToString(encrypted)
 	return encoded, nil
 }
@@ -34,7 +34,7 @@ func EncryptWithBase64(str string) (string, error) {
 func DecryptWithBase64(str string) (string, error) {
 	decoded, err1 := base64.StdEncoding.DecodeString(str)
 	if err1 != nil {
-		fmt.Println("base64 decode error:", err1)
+		log.Errorf("base64 decode error: %v", err1)
 		return "", err1
 	}
 	decrypted, err := e.DecryptWithDefaultKey(decoded)

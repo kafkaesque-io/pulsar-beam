@@ -3,12 +3,12 @@ package pulsardriver
 import (
 	"context"
 	"errors"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // ProducerCache caches a list Pulsar prudcers
@@ -67,7 +67,7 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 	id, err := util.NewUUID()
 	if err != nil {
 		// this is very bad if happens
-		log.Printf("NewUUID generation error %v", err)
+		log.Warnf("NewUUID generation error %v", err)
 		id = string(time.Now().Unix())
 	}
 	prop := map[string]string{"PulsarBeamId": id}
@@ -82,7 +82,7 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 	if async {
 		p.SendAsync(ctx, &message, func(messageId pulsar.MessageID, msg *pulsar.ProducerMessage, err error) {
 			if err != nil {
-				log.Printf("send to Pulsar err %v", err)
+				log.Warnf("send to Pulsar err %v", err)
 				// TODO: push to a queue for retry
 			}
 		})

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -18,6 +17,8 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // SubCloseSignal is a signal object to pass for channel
@@ -63,9 +64,10 @@ func Init() {
 	durationStr := util.AssignString(util.GetConfig().PbDbInterval, "180s")
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
-		log.Panic(err)
+		log.Errorf("specified duration %s error %v", durationStr, err)
+		duration, _ = time.ParseDuration("180s")
 	}
-	log.Printf("beam database pull every %.0f seconds", duration.Seconds())
+	log.Warnf("beam database pull every %.0f seconds", duration.Seconds())
 
 	go func() {
 		run()
@@ -80,7 +82,7 @@ func Init() {
 
 // NewDbHandler gets a local copy of Db handler
 func NewDbHandler() {
-	log.Println("webhook database init...")
+	log.Infof("webhook database init...")
 	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
 }
 
@@ -94,7 +96,8 @@ func pushWebhook(url string, data []byte, headers []string) (int, *http.Response
 
 	req, err := retryablehttp.NewRequest("POST", url, data)
 	if err != nil {
-		panic(err)
+		log.Errorf("url request error %s", err.Error())
+		return http.StatusInternalServerError, nil
 	}
 
 	for _, h := range headers {
@@ -109,11 +112,13 @@ func pushWebhook(url string, data []byte, headers []string) (int, *http.Response
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Printf("webhook post error %s", err.Error())
+		log.Debugf("webhook post error %s", err.Error())
 		return http.StatusInternalServerError, nil
 	}
 
-	log.Printf("webhook endpoint resp status code %d", res.StatusCode)
+	if log.GetLevel() == log.DebugLevel {
+		log.Debugf("webhook endpoint resp status code %d", res.StatusCode)
+	}
 	return res.StatusCode, res
 }
 
@@ -122,12 +127,14 @@ func toPulsar(r *http.Response) {
 	if err != nil {
 		return
 	}
-	// log.Printf("topicURL %s pulsarURL %s", topicFN, pulsarURL)
+	if log.GetLevel() == log.DebugLevel {
+		log.Debugf("topicURL %s pulsarURL %s", topicFN, pulsarURL)
+	}
 
 	b, err2 := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err2 != nil {
-		log.Println(err2)
+		log.Errorf("failed to read webhook resp body %s\n", err2.Error())
 		return
 	}
 
@@ -146,8 +153,10 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 			go toPulsar(res)
 		}
 	} else {
-		// replying on Pulsar to redeliver
-		log.Printf("failed to push to webhook statusCode %d\n", code)
+		if log.GetLevel() == log.DebugLevel {
+			// replying on Pulsar to redeliver
+			log.Errorf("webhook returns non-OK statuscode %d\n", code)
+		}
 	}
 }
 
@@ -184,11 +193,11 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 		}
 		msg, err := c.Receive(ctx)
 		if err != nil {
-			log.Printf("error from consumer loop receive: %v\n", err)
+			log.Infof("error from consumer loop receive: %v\n", err)
 			retry++
 			select {
 			case <-terminate:
-				log.Printf("subscription %s received signal to exit consumer loop", subscriptionKey)
+				log.Infof("subscription %s received signal to exit consumer loop", subscriptionKey)
 				return nil
 			case <-time.Tick(time.Duration(2*retry) * time.Second):
 				//reconnect after error
@@ -199,7 +208,9 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 			}
 		} else if msg != nil {
 			retry = 0
-			fmt.Printf("PulsarMessageId:%#v", msg.ID())
+			if log.GetLevel() == log.DebugLevel {
+				log.Debugf("PulsarMessageId:%#v", msg.ID())
+			}
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%#v", msg.ID()))
 			headers = append(headers, "PulsarPublishedTime:"+msg.PublishTime().String())
 			headers = append(headers, "PulsarTopic:"+msg.Topic())
@@ -215,7 +226,9 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 			if json.Valid(data) {
 				headers = append(headers, "content-type:application/json")
 			}
-			log.Println(string(data))
+			if log.GetLevel() == log.DebugLevel {
+				log.Debug(string(data))
+			}
 			pushAndAck(c, msg, whCfg.URL, data, headers)
 		}
 	}
@@ -237,7 +250,7 @@ func run() {
 			if status == model.Activated {
 				subscriptionSet[subscriptionKey] = true
 				if !ok {
-					log.Printf("start activated webhook for topic subscription %v", subscriptionKey)
+					log.Infof("start activated webhook for topic subscription %v", subscriptionKey)
 					go ConsumeLoop(url, token, topic, subscriptionKey, whCfg)
 				}
 			}
@@ -247,18 +260,18 @@ func run() {
 	// cancel any webhook which is no longer required to be activated by the database
 	for k := range webhooks {
 		if subscriptionSet[k] != true {
-			log.Printf("cancel webhook consumer subscription key %s", k)
+			log.Infof("cancel webhook consumer subscription key %s", k)
 			cancelConsumer(k)
 		}
 	}
-	log.Println("load webhooks size ", len(webhooks))
+	log.Infof("load webhooks size %d", len(webhooks))
 }
 
 // LoadConfig loads the entire topic documents from the database
 func LoadConfig() []*model.TopicConfig {
 	cfgs, err := singleDb.Load()
 	if err != nil {
-		log.Printf("failed to load topics from database error %v", err.Error())
+		log.Errorf("failed to load topics from database error %v", err.Error())
 	}
 
 	return cfgs
@@ -267,7 +280,7 @@ func LoadConfig() []*model.TopicConfig {
 func cancelConsumer(key string) error {
 	ok := DeleteWebhook(key)
 	if ok {
-		log.Printf("cancel consumer %v", key)
+		log.Infof("cancel consumer %v", key)
 		pulsardriver.CancelPulsarConsumer(key)
 		return nil
 	}

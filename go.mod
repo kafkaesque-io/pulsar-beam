@@ -12,6 +12,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.4
 	github.com/prometheus/client_golang v1.4.1
 	github.com/rs/cors v1.7.0
+	github.com/sirupsen/logrus v1.5.0
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect

@@ -2,9 +2,10 @@ package db
 
 import (
 	"errors"
-	"log"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // dbConn is a singlton of Db instance
@@ -61,7 +62,7 @@ func NewDb(reqDbType string) (Db, error) {
 func NewDbWithPanic(reqDbType string) Db {
 	newDb, err := NewDb(reqDbType)
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalf("init db with error %s", err.Error())
 	}
 	return newDb
 }
