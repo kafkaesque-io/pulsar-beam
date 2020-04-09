@@ -59,6 +59,7 @@ type PulsarProducer struct {
 func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 	p, err := GetPulsarProducer(url, token, topic)
 	if err != nil {
+		log.Errorf("Failed to create Pulsar produce err: %v", err)
 		return errors.New("Failed to create Pulsar producer")
 	}
 

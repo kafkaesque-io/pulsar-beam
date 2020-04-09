@@ -107,7 +107,7 @@ func addWebhookToDb() string {
 	defer resp.Body.Close()
 
 	log.Printf("post call to rest API statusCode %d", resp.StatusCode)
-	eval(resp.StatusCode == 201, "expected receiver status code is 201")
+	eval(resp.StatusCode == 201, "expected rest api status code is 201")
 	return topicConfig.Key
 }
 
@@ -127,15 +127,14 @@ func deleteWebhook(key string) {
 	defer resp.Body.Close()
 
 	log.Printf("delete topic %s rest API statusCode %d", key, resp.StatusCode)
-	eval(resp.StatusCode == 200, "expected receiver status code is 200")
+	eval(resp.StatusCode == 200, "expected delete status code is 200")
 }
 
 func produceMessage(sentMessage string) string {
 
 	beamReceiverURL := "http://localhost:8085/v1/firehose"
 	originalData := []byte(`{"Data": "` + sentMessage + `"}`)
-	log.Println(string(originalData))
-	// log.Printf("send to topic %s\n", webhookTopic)
+	log.Printf("send to topic %s with message %s \n", webhookTopic, string(originalData))
 
 	//Send to Pulsar Beam
 	req, err := http.NewRequest("POST", beamReceiverURL, bytes.NewBuffer(originalData))
@@ -152,12 +151,14 @@ func produceMessage(sentMessage string) string {
 
 	// Send request
 	resp, err := client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		log.Fatal("Error reading response from Beam. ", err)
 	}
-	defer resp.Body.Close()
 
-	eval(resp.StatusCode == 200, "expected receiver status code is 200")
+	eval(resp.StatusCode == 200, fmt.Sprintf("expected receiver status code is 200 but received %d", resp.StatusCode))
 
 	return sentMessage
 }

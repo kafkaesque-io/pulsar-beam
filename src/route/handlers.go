@@ -172,7 +172,7 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
-	if !VerifySubject(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -227,7 +227,6 @@ func VerifySubjectBasedOnTopic(topicFN, tokenSub string) bool {
 		log.Infof(" auth verify tenant %s token sub %s", tenant, tokenSub)
 		return false
 	}
-	// subjects := append(util.SuperRoles, tenant)
 	return VerifySubject(tenant, tokenSub)
 }
 
