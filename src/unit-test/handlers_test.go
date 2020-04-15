@@ -155,10 +155,23 @@ func TestFireHoseReceiverHandler(t *testing.T) {
 }
 
 func TestSubjectMatch(t *testing.T) {
-	assert(t, !VerifySubject("picasso", "picasso"), "")
-	assert(t, VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
-	assert(t, VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
-	assert(t, !VerifySubject("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "myadmin"), "")
+	assert(t, !VerifySubjectBasedOnTopic("picasso", "picasso"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp", "picasso"), "")
+	assert(t, !VerifySubjectBasedOnTopic("picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet-1234"), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "myadmin"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234,myadmin"), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picaso-1234,myadmin"), "")
+
+	originalSuperRoles := util.SuperRoles
+	util.SuperRoles = []string{}
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
+	util.SuperRoles = []string{"superuser", "admin"}
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
+	util.SuperRoles = originalSuperRoles
 }
 
 // test Topic modelling

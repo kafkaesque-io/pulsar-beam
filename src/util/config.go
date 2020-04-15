@@ -42,6 +42,7 @@ type Configuration struct {
 	PulsarPublicKey  string `json:"PulsarPublicKey"`
 	PulsarPrivateKey string `json:"PulsarPrivateKey"`
 	SuperRoles       string `json:"SuperRoles"`
+	PulsarBrokerURL  string `json:"PulsarBrokerURL"`
 
 	// Webhook consumers pool checked interval to stop deleted consumers and start new ones
 	// default value 180s
@@ -87,8 +88,6 @@ func Init() {
 	log.SetLevel(logLevel(Config.LogLevel))
 
 	log.Warnf("Configuration built from file - %s", configFile)
-	log.Infof("Configuration built from file - %s", configFile)
-	log.Debugf("Configuration built from file - %s", configFile)
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
 }
 
@@ -131,14 +130,19 @@ func ReadConfigFile(configFile string) {
 
 	clusterStr := AssignString(Config.PulsarClusters, "")
 	AllowedPulsarURLs = strings.Split(clusterStr, ",")
+	if Config.PulsarBrokerURL != "" {
+		AllowedPulsarURLs = append([]string{Config.PulsarBrokerURL}, AllowedPulsarURLs...)
+	}
 
 	superRoleStr := AssignString(Config.SuperRoles, "superuser")
 	SuperRoles = strings.Split(superRoleStr, ",")
 
 	fmt.Printf("port %s, PbDbType %s, DbRefreshInterval %s, TrustStore %s, DbName %s, DbConnectString %s\n",
 		Config.PORT, Config.PbDbType, Config.PbDbInterval, Config.TrustStore, Config.DbName, Config.DbConnectionStr)
-	fmt.Printf("PublicKey %s, PrivateKey %s, AllowedPulsarURLs %v\n",
-		Config.PulsarPublicKey, Config.PulsarPrivateKey, AllowedPulsarURLs)
+	fmt.Printf("PublicKey %s, PrivateKey %s\n",
+		Config.PulsarPublicKey, Config.PulsarPrivateKey)
+	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v\n",
+		Config.PulsarBrokerURL, AllowedPulsarURLs)
 }
 
 //GetConfig returns a reference to the Configuration

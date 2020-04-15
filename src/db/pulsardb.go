@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -25,7 +27,7 @@ import (
 // a map of TopicConfig struct with Key, hash of pulsar URL and topic full name, is the key
 var topics = make(map[string]model.TopicConfig)
 
-// PulsarHandler is the mongo database driver
+// PulsarHandler is the Pulsar database driver
 type PulsarHandler struct {
 	client   pulsar.Client
 	producer pulsar.Producer
@@ -36,7 +38,10 @@ type PulsarHandler struct {
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
 	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
-	pulsarURL := util.GetConfig().DbConnectionStr
+	pulsarURL := util.GetConfig().PulsarBrokerURL
+	if strings.HasPrefix(util.GetConfig().DbConnectionStr, "pulsar") {
+		pulsarURL = util.GetConfig().DbConnectionStr
+	}
 	topicName := util.GetConfig().DbName
 	tokenStr := util.GetConfig().DbPassword
 
@@ -50,9 +55,12 @@ func (s *PulsarHandler) Init() error {
 		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
 	}
 
-	// TODO: add code to tell CentOS or Ubuntu
-	trustStore := util.AssignString(util.GetConfig().TrustStore, "") //"/etc/ssl/certs/ca-bundle.crt"
-	if trustStore != "" {
+	if strings.HasPrefix(pulsarURL, "pulsar+ssl://") {
+		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
+		if trustStore == "" {
+
+			return fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
+		}
 		clientOpt.TLSTrustCertsFilePath = trustStore
 	}
 
@@ -124,7 +132,7 @@ func (s *PulsarHandler) Close() error {
 	return nil
 }
 
-//NewPulsarHandler initialize a Mongo Db
+//NewPulsarHandler initialize a Pulsar Db
 func NewPulsarHandler() (*PulsarHandler, error) {
 	handler := PulsarHandler{}
 	err := handler.Init()
