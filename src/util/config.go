@@ -123,7 +123,7 @@ func ReadConfigFile(configFile string) {
 		if len(envV) > 0 {
 			f := st.FieldByName(field)
 			if f.IsValid() && f.CanSet() && f.Kind() == reflect.String {
-				f.SetString(envV)
+				f.SetString(strings.TrimSuffix(envV, "\n")) // ensure no \n at the end of line that was introduced by loading k8s secrete file
 			}
 		}
 	}
