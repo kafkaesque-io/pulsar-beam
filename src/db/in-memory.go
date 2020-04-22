@@ -17,10 +17,14 @@ import (
 
 // InMemoryHandler is the in memory cache driver
 type InMemoryHandler struct {
+	topics map[string]model.TopicConfig
+	logger *log.Entry
 }
 
 //Init is a Db interface method.
 func (s *InMemoryHandler) Init() error {
+	s.logger = log.WithFields(log.Fields{"app": "inmemory-db"})
+	s.topics = make(map[string]model.TopicConfig)
 	return nil
 }
 
@@ -53,7 +57,7 @@ func (s *InMemoryHandler) Create(topicCfg *model.TopicConfig) (string, error) {
 		return key, err
 	}
 
-	if _, ok := topics[key]; ok {
+	if _, ok := s.topics[key]; ok {
 		return key, errors.New(DocAlreadyExisted)
 	}
 
@@ -61,7 +65,7 @@ func (s *InMemoryHandler) Create(topicCfg *model.TopicConfig) (string, error) {
 	topicCfg.CreatedAt = time.Now()
 	topicCfg.UpdatedAt = topicCfg.CreatedAt
 
-	topics[topicCfg.Key] = *topicCfg
+	s.topics[topicCfg.Key] = *topicCfg
 	return key, nil
 }
 
@@ -76,7 +80,7 @@ func (s *InMemoryHandler) GetByTopic(topicFullName, pulsarURL string) (*model.To
 
 // GetByKey gets a document by the key
 func (s *InMemoryHandler) GetByKey(hashedTopicKey string) (*model.TopicConfig, error) {
-	if v, ok := topics[hashedTopicKey]; ok {
+	if v, ok := s.topics[hashedTopicKey]; ok {
 		return &v, nil
 	}
 	return &model.TopicConfig{}, errors.New(DocNotFound)
@@ -85,7 +89,7 @@ func (s *InMemoryHandler) GetByKey(hashedTopicKey string) (*model.TopicConfig, e
 // Load loads the entire database as a list
 func (s *InMemoryHandler) Load() ([]*model.TopicConfig, error) {
 	results := []*model.TopicConfig{}
-	for _, v := range topics {
+	for _, v := range s.topics {
 		results = append(results, &v)
 	}
 	return results, nil
@@ -98,11 +102,11 @@ func (s *InMemoryHandler) Update(topicCfg *model.TopicConfig) (string, error) {
 		return key, err
 	}
 
-	if _, ok := topics[key]; !ok {
+	if _, ok := s.topics[key]; !ok {
 		return s.Create(topicCfg)
 	}
 
-	v := topics[key]
+	v := s.topics[key]
 	v.Token = topicCfg.Token
 	v.Tenant = topicCfg.Tenant
 	v.Notes = topicCfg.Notes
@@ -110,8 +114,8 @@ func (s *InMemoryHandler) Update(topicCfg *model.TopicConfig) (string, error) {
 	v.UpdatedAt = time.Now()
 	v.Webhooks = topicCfg.Webhooks
 
-	log.Infof("upsert %s", key)
-	topics[topicCfg.Key] = *topicCfg
+	s.logger.Infof("upsert %s", key)
+	s.topics[topicCfg.Key] = *topicCfg
 	return key, nil
 
 }
@@ -127,10 +131,10 @@ func (s *InMemoryHandler) Delete(topicFullName, pulsarURL string) (string, error
 
 // DeleteByKey deletes a document based on key
 func (s *InMemoryHandler) DeleteByKey(hashedTopicKey string) (string, error) {
-	if _, ok := topics[hashedTopicKey]; !ok {
+	if _, ok := s.topics[hashedTopicKey]; !ok {
 		return "", errors.New(DocNotFound)
 	}
 
-	delete(topics, hashedTopicKey)
+	delete(s.topics, hashedTopicKey)
 	return hashedTopicKey, nil
 }

@@ -270,17 +270,21 @@ func TestPulsarDbDriver(t *testing.T) {
 	equals(t, len(topic.Webhooks), 1)
 	equals(t, cap(topic.Webhooks), 10)
 
+	// initial creation of a topic config
 	_, err = pulsardb.Create(&topic)
 	errNil(t, err)
 
+	// expect error when creation of an already existed topicConfig
 	_, err = pulsardb.Create(&topic)
 	equals(t, err != nil, true)
 
+	// however updating an existing topic is allowed
 	var key string
 	key, err = pulsardb.Update(&topic)
 	errNil(t, err)
-	equals(t, key != "", true)
+	equals(t, len(key) > 1, true)
 
+	// Load will return a list topicConfig so we can confirm if the one already created exists
 	res, err := pulsardb.Load()
 	if err != nil {
 		log.Fatal(err)
@@ -293,6 +297,7 @@ func TestPulsarDbDriver(t *testing.T) {
 	}
 	equals(t, found, true)
 
+	// Get topic by fullename and pulsar URL
 	resTopic, err := pulsardb.GetByTopic(topic.TopicFullName, topic.PulsarURL)
 	errNil(t, err)
 	equals(t, topic.Token, resTopic.Token)

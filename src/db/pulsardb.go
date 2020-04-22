@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -24,27 +25,34 @@ import (
  * A topic prefix for the webhook configuration database
 **/
 
+// the signal to track if the liveness of the reader process
+type liveSignal struct{}
+
 // a map of TopicConfig struct with Key, hash of pulsar URL and topic full name, is the key
-var topics = make(map[string]model.TopicConfig)
+// var topics = make(map[string]model.TopicConfig)
 
 // PulsarHandler is the Pulsar database driver
 type PulsarHandler struct {
-	client   pulsar.Client
-	producer pulsar.Producer
-	reader   pulsar.Reader
-	logger   *log.Entry
+	client     pulsar.Client
+	producer   pulsar.Producer
+	topics     map[string]model.TopicConfig
+	topicName  string
+	topicsLock sync.RWMutex
+	logger     *log.Entry
 }
 
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
 	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
+	s.topics = make(map[string]model.TopicConfig)
 	pulsarURL := util.GetConfig().PulsarBrokerURL
 	if strings.HasPrefix(util.GetConfig().DbConnectionStr, "pulsar") {
 		pulsarURL = util.GetConfig().DbConnectionStr
 	}
-	topicName := util.GetConfig().DbName
+	s.topicName = util.GetConfig().DbName
 	tokenStr := util.GetConfig().DbPassword
 
+	s.logger.Infof("pulsar URL: %s token: %s", pulsarURL, tokenStr)
 	clientOpt := pulsar.ClientOptions{
 		URL:               pulsarURL,
 		OperationTimeout:  30 * time.Second,
@@ -58,7 +66,6 @@ func (s *PulsarHandler) Init() error {
 	if strings.HasPrefix(pulsarURL, "pulsar+ssl://") {
 		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
 		if trustStore == "" {
-
 			return fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
 		}
 		clientOpt.TLSTrustCertsFilePath = trustStore
@@ -67,52 +74,83 @@ func (s *PulsarHandler) Init() error {
 	var err error
 	s.client, err = pulsar.NewClient(clientOpt)
 	if err != nil {
+		// this would be a serious problem so that we return with error
 		return err
 	}
 
-	s.producer, err = s.client.CreateProducer(pulsar.ProducerOptions{
-		Topic:           topicName,
-		DisableBatching: true,
-	})
+	err = s.createProducer()
 	if err != nil {
+		// this would be a serious problem so that we return with error
+		log.Errorf("failed to create producer error %v", err)
 		return err
 	}
 
-	s.reader, err = s.client.CreateReader(pulsar.ReaderOptions{
-		Topic:          topicName,
+	// a loop to receive and recover from failure
+	go func() {
+		sig := make(chan *liveSignal)
+		go s.dbListener(sig)
+		for {
+			select {
+			case <-sig:
+				go s.dbListener(sig)
+			}
+		}
+	}()
+
+	return nil
+}
+
+//DbListener listens db updates
+func (s *PulsarHandler) dbListener(sig chan *liveSignal) error {
+	defer func(termination chan *liveSignal) {
+		s.logger.Errorf("tenant db listener terminated")
+		termination <- &liveSignal{}
+	}(sig)
+	s.logger.Infof("listens to pulsar wh database changes")
+	reader, err := s.client.CreateReader(pulsar.ReaderOptions{
+		Topic:          s.topicName,
 		StartMessageID: pulsar.EarliestMessageID(),
 		ReadCompacted:  true,
 	})
 
 	if err != nil {
+		log.Errorf("dbListener failed to create reader, error %v", err)
 		return err
 	}
+	defer reader.Close()
 
+	ctx := context.Background()
 	// infinite loop to receive messages
-	go func() {
-		ctx := context.Background()
-		for {
-			if msg, err := s.reader.Next(ctx); err == nil {
-				doc := model.TopicConfig{}
-				if err := json.Unmarshal(msg.Payload(), &doc); err == nil {
-					if doc.TopicStatus != model.Deleted {
-						topics[doc.Key] = doc
-						s.logger.Infof(topics[doc.Key].PulsarURL)
-					} else {
-						delete(topics, doc.Key)
-					}
-				} else {
-					s.logger.Errorf("json unmarshal error %v", err)
-				}
-			} else {
-				s.logger.Errorf("pulsar db reader err %v", err)
-				// Report and fix ...
-			}
-
+	for {
+		data, err := reader.Next(ctx)
+		if err != nil {
+			log.Errorf("dbListener reader.Next() error %v", err)
+			return err
 		}
-	}()
+		doc := model.TopicConfig{}
+		if err = json.Unmarshal(data.Payload(), &doc); err != nil {
+			s.logger.Errorf("dblistener reader unmarshal error %v", err)
+			// ignore error and move on
+		} else {
+			s.topicsLock.Lock()
+			defer s.topicsLock.Unlock()
+			if doc.TopicStatus != model.Deleted {
+				s.logger.Infof("add topic configuration %s", doc.Key)
+				s.topics[doc.Key] = doc
+			} else {
+				delete(s.topics, doc.Key)
+			}
+		}
+	}
+}
 
-	return nil
+func (s *PulsarHandler) createProducer() error {
+	var err error
+	s.producer, err = s.client.CreateProducer(pulsar.ProducerOptions{
+		Topic:           s.topicName,
+		DisableBatching: true,
+	})
+	return err
 }
 
 //Sync is a Db interface method.
@@ -128,7 +166,8 @@ func (s *PulsarHandler) Health() bool {
 // Close closes database
 func (s *PulsarHandler) Close() error {
 	s.producer.Close()
-	s.reader.Close()
+	// s.client.Close()
+	// Here is a Client object leak
 	return nil
 }
 
@@ -146,7 +185,7 @@ func (s *PulsarHandler) Create(topicCfg *model.TopicConfig) (string, error) {
 		return key, err
 	}
 
-	if _, ok := topics[key]; ok {
+	if _, ok := s.topics[key]; ok {
 		return key, errors.New(DocAlreadyExisted)
 	}
 
@@ -176,7 +215,7 @@ func (s *PulsarHandler) updateCacheAndPulsar(topicCfg *model.TopicConfig) (strin
 
 	s.logger.Infof("send to Pulsar %s", topicCfg.Key)
 
-	topics[topicCfg.Key] = *topicCfg
+	s.topics[topicCfg.Key] = *topicCfg
 	return topicCfg.Key, nil
 }
 
@@ -191,7 +230,7 @@ func (s *PulsarHandler) GetByTopic(topicFullName, pulsarURL string) (*model.Topi
 
 // GetByKey gets a document by the key
 func (s *PulsarHandler) GetByKey(hashedTopicKey string) (*model.TopicConfig, error) {
-	if v, ok := topics[hashedTopicKey]; ok {
+	if v, ok := s.topics[hashedTopicKey]; ok {
 		return &v, nil
 	}
 	return &model.TopicConfig{}, errors.New(DocNotFound)
@@ -200,7 +239,7 @@ func (s *PulsarHandler) GetByKey(hashedTopicKey string) (*model.TopicConfig, err
 // Load loads the entire database into memory
 func (s *PulsarHandler) Load() ([]*model.TopicConfig, error) {
 	results := []*model.TopicConfig{}
-	for _, v := range topics {
+	for _, v := range s.topics {
 		results = append(results, &v)
 	}
 	return results, nil
@@ -213,11 +252,11 @@ func (s *PulsarHandler) Update(topicCfg *model.TopicConfig) (string, error) {
 		return key, err
 	}
 
-	if _, ok := topics[key]; !ok {
+	if _, ok := s.topics[key]; !ok {
 		return s.Create(topicCfg)
 	}
 
-	v := topics[key]
+	v := s.topics[key]
 	v.Token = topicCfg.Token
 	v.Tenant = topicCfg.Tenant
 	v.Notes = topicCfg.Notes
@@ -241,11 +280,11 @@ func (s *PulsarHandler) Delete(topicFullName, pulsarURL string) (string, error) 
 
 // DeleteByKey deletes a document based on key
 func (s *PulsarHandler) DeleteByKey(hashedTopicKey string) (string, error) {
-	if _, ok := topics[hashedTopicKey]; !ok {
+	if _, ok := s.topics[hashedTopicKey]; !ok {
 		return "", errors.New(DocNotFound)
 	}
 
-	v := topics[hashedTopicKey]
+	v := s.topics[hashedTopicKey]
 	v.TopicStatus = model.Deleted
 
 	ctx := context.Background()
@@ -263,6 +302,6 @@ func (s *PulsarHandler) DeleteByKey(hashedTopicKey string) (string, error) {
 		return "", err
 	}
 
-	delete(topics, v.Key)
+	delete(s.topics, v.Key)
 	return hashedTopicKey, nil
 }
