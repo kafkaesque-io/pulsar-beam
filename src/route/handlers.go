@@ -3,6 +3,7 @@ package route
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -60,7 +61,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 		return
 	}
 
@@ -136,25 +137,25 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := singleDb.Update(&doc)
 	if err != nil {
-		w.WriteHeader(http.StatusConflict)
+		util.ResponseErrorJSON(err, w, http.StatusConflict)
 		return
 	}
 	if len(id) > 1 {
 		savedDoc, err := singleDb.GetByKey(id)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		resJSON, err := json.Marshal(savedDoc)
 		if err != nil {
-			log.Errorf("marshal updated topic error %v", err)
+			util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 			return
 		}
 		w.Write(resJSON)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
+	util.ResponseErrorJSON(fmt.Errorf("failed to update"), w, http.StatusInternalServerError)
 	return
 }
 
@@ -179,7 +180,7 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 	deletedKey, err := singleDb.DeleteByKey(topicKey)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
 	resJSON, err := json.Marshal(deletedKey)

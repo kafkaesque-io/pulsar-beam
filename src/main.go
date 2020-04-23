@@ -10,6 +10,8 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
+
+	_ "github.com/kafkaesque-io/pulsar-beam/src/docs" // This line is required for go-swagger to find docs
 )
 
 var mode = util.AssignString(os.Getenv("ProcessMode"), *flag.String("mode", "hybrid", "server running mode"))
