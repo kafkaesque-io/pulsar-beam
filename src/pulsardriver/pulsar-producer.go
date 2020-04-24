@@ -12,22 +12,17 @@ import (
 )
 
 // ProducerCache is the cache for Producer objects
-var ProducerCache *util.Cache
-
-// Init initializes Pulsar drivers such as Client, Consumer, and Producer cache
-func Init() {
-	ProducerCache = util.NewCache(util.CacheOption{
-		TTL:           900 * time.Second,
-		CleanInterval: 902 * time.Second,
-		ExpireCallback: func(key string, value interface{}) {
-			if obj, ok := value.(*PulsarProducer); ok {
-				obj.Close()
-			} else {
-				log.Errorf("wrong PulsrProducer object type stored in Cache")
-			}
-		},
-	})
-}
+var ProducerCache = util.NewCache(util.CacheOption{
+	TTL:           900 * time.Second,
+	CleanInterval: 902 * time.Second,
+	ExpireCallback: func(key string, value interface{}) {
+		if obj, ok := value.(*PulsarProducer); ok {
+			obj.Close()
+		} else {
+			log.Errorf("wrong PulsrProducer object type stored in Cache")
+		}
+	},
+})
 
 // GetPulsarProducer gets a Pulsar producer object
 func GetPulsarProducer(pulsarURL, pulsarToken, topic string) (pulsar.Producer, error) {
