@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	. "github.com/kafkaesque-io/pulsar-beam/src/route"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
@@ -219,4 +221,31 @@ func TestTopicConfig(t *testing.T) {
 	topic.Webhooks[1].InitialPosition = "earliest"
 	_, err = model.ValidateTopicConfig(topic)
 	errNil(t, err)
+}
+
+// test other topic model functions
+
+func TestTopicModelFunctions(t *testing.T) {
+	subType, err := model.GetSubscriptionType("")
+	errNil(t, err)
+	assert(t, subType == pulsar.Exclusive, "match default pulsar.Exclusive subscription type")
+
+	subType, err = model.GetSubscriptionType("kEyshared")
+	errNil(t, err)
+	assert(t, subType == pulsar.KeyShared, "match pulsar.KeyShared subscription type with string")
+
+	subType, err = model.GetSubscriptionType("failoveR")
+	errNil(t, err)
+	assert(t, subType == pulsar.Failover, "match pulsar.Failover subscription type with string")
+
+	subType, err = model.GetSubscriptionType("floveR")
+	assert(t, err != nil, "unmatched subscription type returns error")
+	assert(t, subType == -1, "unmatched subscription type")
+
+	// test unmatched URL in webhook
+	wh := model.WebhookConfig{
+		URL: "localhost:8080/test",
+	}
+	err = model.ValidateWebhookConfig([]model.WebhookConfig{wh})
+	assert(t, strings.HasPrefix(err.Error(), "not a URL"), "test not a URL error in webhook config")
 }

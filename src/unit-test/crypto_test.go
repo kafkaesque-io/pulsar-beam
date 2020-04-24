@@ -98,15 +98,45 @@ func TestGenWriteKey(t *testing.T) {
 
 }
 
-func TestJWTRSASignAndVerify(t *testing.T) {
-	// PK12 binary format
-	testTokenSignAndVerify(t, "./pk12-binary-private.key", "./pk12-binary-public.key")
+func TestJWTRSASignAndVerifyWithPEMKey(t *testing.T) {
+	privateKeyPath := "./example_private_key"
+	publicKeyPath := "./example_public_key.pub"
+	authen := NewRSAKeyPair(privateKeyPath, publicKeyPath)
 
-	// PEM format
-	testTokenSignAndVerify(t, "./example_private_key", "./example_public_key.pub")
+	tokenString, err := authen.GenerateToken("myadmin")
+	errNil(t, err)
+	assert(t, len(tokenString) > 1, "a token string can be generated")
+
+	token, err0 := authen.DecodeToken(tokenString)
+	errNil(t, err0)
+	assert(t, token.Valid, "validate a valid token")
+
+	valid, _ := authen.VerifyTokenSubject("bogustokenstr", "myadmin")
+	assert(t, valid == false, "validate token fails test")
+
+	valid, _ = authen.VerifyTokenSubject(tokenString, "myadmin")
+	assert(t, valid, "validate token's expected subject")
+
+	valid, _ = authen.VerifyTokenSubject(tokenString, "admin")
+	assert(t, valid == false, "validate token's mismatched subject")
+
+	pulsarGeneratedToken := "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwaWNhc3NvIn0.TZilYXJOeeCLwNOHICCYyFxUlwOLxa_kzVjKcoQRTJm2xqmNzTn-s9zjbuaNMCDj1U7gRPHKHkWNDb2W4MwQd6Nkc543E_cIHlJG82eKKIsGfAEQpnPJLpzz2zytgmRON6HCPDsQDAKIXHriKmbmCzHLOILziks0oOCadBGC79iddb9DjPku6sU0nByS8r8_oIrRCqV_cNsH1MInA6CRNYkPJaJI0T8i77ND7azTXwH0FTX_KE_yRmOkXnejJ14GEEcBM99dPGg8jCp-zOyfvrMIJjWsWzjXYExxjKaC85779ciu59YO3cXd0Lk2LzlyB4kDKZgPyqOgyQFIfQ1eiA" // pragma: allowlist secret
+	valid, _ = authen.VerifyTokenSubject(pulsarGeneratedToken, "picasso")
+	assert(t, valid, "validate pulsar generated token and subject")
+
+	subjects, err := authen.GetTokenSubject(pulsarGeneratedToken)
+	errNil(t, err)
+	equals(t, subjects, "picasso")
+
+	t2 := time.Now().Add(time.Hour * 1)
+	expireOffset := authen.GetTokenRemainingValidity(t2)
+	equals(t, expireOffset, 3600)
+
 }
 
-func testTokenSignAndVerify(t *testing.T, privateKeyPath, publicKeyPath string) {
+func TestJWTRSASignAndVerifyWithPKCS12Keys(t *testing.T) {
+	privateKeyPath := "./pk12-binary-private.key"
+	publicKeyPath := "./pk12-binary-public.key"
 	authen := NewRSAKeyPair(privateKeyPath, publicKeyPath)
 
 	tokenString, err := authen.GenerateToken("myadmin")

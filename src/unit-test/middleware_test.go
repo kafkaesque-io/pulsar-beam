@@ -1,14 +1,17 @@
 package tests
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/icrypto"
 	. "github.com/kafkaesque-io/pulsar-beam/src/middleware"
 	"github.com/kafkaesque-io/pulsar-beam/src/route"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
@@ -120,6 +123,32 @@ func TestLoggerMiddleware(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	logger.ServeHTTP(rr, req)
+	equals(t, http.StatusOK, rr.Code)
+}
+
+func TestAuthJWTMiddlewareWithNoAuth(t *testing.T) {
+	// thanks goodness it is singleton
+	publicKeyPath := "./example_public_key.pub"
+	privateKeyPath := "./example_private_key"
+	icrypto.NewRSAKeyPair(privateKeyPath, publicKeyPath)
+
+	os.Setenv("HTTPAuthImpl", "noauth")
+	os.Setenv("SuperRoles", "thisisroot,anotherroot")
+	util.ReadConfigFile("../" + util.DefaultConfigFile)
+
+	handlerTest := AuthVerifyJWT(http.HandlerFunc(mockHandler))
+
+	req, err := http.NewRequest(http.MethodGet, "http://test", nil)
+	errNil(t, err)
+
+	rr := httptest.NewRecorder()
+
+	// test missing authorization header
+	handlerTest.ServeHTTP(rr, req)
+	rr = httptest.NewRecorder()
+	fmt.Printf("subs are %v size %d", rr.Header(), len(rr.Header()))
+	handlerTest.ServeHTTP(rr, req)
+	equals(t, "thisisroot", req.Header.Get("injectedSubs"))
 	equals(t, http.StatusOK, rr.Code)
 }
 

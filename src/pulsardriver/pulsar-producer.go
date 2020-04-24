@@ -11,15 +11,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var producerCacheTTL = util.GetEnvInt("ProducerCacheTTL", 900)
+
 // ProducerCache is the cache for Producer objects
 var ProducerCache = util.NewCache(util.CacheOption{
-	TTL:           900 * time.Second,
-	CleanInterval: 902 * time.Second,
+	TTL:           time.Duration(producerCacheTTL) * time.Second,
+	CleanInterval: time.Duration(producerCacheTTL+2) * time.Second,
 	ExpireCallback: func(key string, value interface{}) {
 		if obj, ok := value.(*PulsarProducer); ok {
 			obj.Close()
 		} else {
-			log.Errorf("wrong PulsrProducer object type stored in Cache")
+			log.Errorf("wrong PulsarProducer object type stored in Cache")
 		}
 	},
 })
