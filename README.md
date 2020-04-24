@@ -8,13 +8,13 @@
 
 # Pulsar Beam
 
-Beam is a http based streaming and queueing system that is backed up by Apache Pulsar.
+Beam is an http based streaming and queueing system that is backed up by Apache Pulsar.
 
 1. Data can be sent to Pulsar via an HTTP POST method as a producer.
-2. To consume the data, data can be pushed to a webhook.
-3. A webhook can reply processed message, in the response body, back to another Pulsar topic via Pulsar Beam.
+2. Data can be pushed to a webhook or Cloud Function for consumption.
+3. A webhook or Cloud Function can reply processed message, in the response body, back to another Pulsar topic via Pulsar Beam.
 
-The development is in an early stage. Please email `contact@kafkaesque.io` for any inquiry or demo. Opening an issue and PR are welcomed!
+Opening an issue and PR are welcomed! Please email `contact@kafkaesque.io` for any inquiry or demo.
 
 ## Advantages
 1. Since Beam speaks http, it is language and OS independent. You can take advantage of powerhouse of Apache Pulsar without limitation to choice of client and OS.
@@ -24,6 +24,8 @@ Immediately, Pulsar can be supported on Windows and any languages.
 2. It's simple.
 
 ## Interface
+
+REST API and endpoint swagger document is published at [this link](https://kafkaesque-io.github.io/pulsar-beam-swagger/)
 
 ### Endpoint to receive messages
 
@@ -38,9 +40,9 @@ These HTTP headers are required to map to Pulsar topic.
 ### Webhook registration
 Webhook registration is done via REST API backed by configurable database, such as MongoDB, in momery cache, and Pulsar topic. Yes, we can use a compacted Pulsar Topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.
 
-Both json and yml format are supported as configuration file.
+### Configuration
 
-TODO: add REST API document.
+Both [json](./config/pulsar_beam.json) and [yml format](./config/pulsar_beam.yml) are supported as configuration file.
 
 ### Sink source
 

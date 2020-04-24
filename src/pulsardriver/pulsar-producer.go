@@ -21,7 +21,7 @@ var ProducerCache = util.NewCache(util.CacheOption{
 		if obj, ok := value.(*PulsarProducer); ok {
 			obj.Close()
 		} else {
-			log.Errorf("wrong PulsrProducer object type stored in Cache")
+			log.Errorf("wrong PulsarProducer object type stored in Cache")
 		}
 	},
 })

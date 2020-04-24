@@ -65,7 +65,7 @@ func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, p
 		if pulsarURL == "" {
 			pulsarURL = allowedClusters[0]
 		} else if !StrContains(allowedClusters, pulsarURL) {
-			return "", "", "", fmt.Errorf("unmatched cluster")
+			return "", "", "", fmt.Errorf("pulsar cluster %s is not allowed", pulsarURL)
 		}
 	}
 	if topicFN == "" || pulsarURL == "" {

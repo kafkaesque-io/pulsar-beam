@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
@@ -53,26 +52,4 @@ func TestProducerObject(t *testing.T) {
 	clt := pulsardriver.PulsarClient{}
 	clt.UpdateTime()
 	clt.Close()
-}
-
-func TestPulsarProducer(t *testing.T) {
-	util.Config.DbConnectionStr = os.Getenv("PULSAR_URI")
-	util.Config.DbName = os.Getenv("REST_DB_TABLE_TOPIC")
-	util.Config.DbPassword = os.Getenv("PULSAR_TOKEN")
-	util.Config.TrustStore = os.Getenv("TrustStore")
-	if util.GetConfig().DbPassword == "" {
-		util.ReadConfigFile("../" + util.DefaultConfigFile)
-		return
-	}
-
-	os.Setenv("ProducerCacheTTL", "1")
-	_, err := pulsardriver.GetPulsarProducer(util.Config.DbConnectionStr, util.Config.DbPassword, util.Config.DbName)
-	errNil(t, err)
-	err = pulsardriver.SendToPulsar(util.Config.DbConnectionStr, util.Config.DbPassword, util.Config.DbName, []byte("producer test from unittest"), false)
-	errNil(t, err)
-	err = pulsardriver.SendToPulsar(util.Config.DbConnectionStr, util.Config.DbPassword, util.Config.DbName, []byte("producer test from unittest"), false)
-	errNil(t, err)
-	time.Sleep(4 * time.Second)
-	err = pulsardriver.SendToPulsar(util.Config.DbConnectionStr, util.Config.DbPassword, util.Config.DbName, []byte("producer test from unittest"), false)
-	errNil(t, err)
 }
