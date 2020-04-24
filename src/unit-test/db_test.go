@@ -319,7 +319,10 @@ func TestPulsarDbDriver(t *testing.T) {
 	resTopic2, err = pulsardb.GetByKey(resTopic.Key)
 	assert(t, err != nil, "already deleted so returns error")
 	equals(t, err.Error(), DocNotFound)
+
+	err = pulsardb.Sync()
+	assert(t, err != nil, "pulsardb sync is not implemented yet")
 	// TODO: find a place to test Close(); need to find out dependencies.
 	// Comment out because there are other test cases require database.
-	// errNil(t, pulsardb.Close())
+	errNil(t, pulsardb.Close())
 }

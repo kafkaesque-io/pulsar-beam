@@ -325,6 +325,10 @@ func TestInfinityExpiryTTLCache(t *testing.T) {
 
 	assert(t, !object1.isClosed, "object1 has not expired yet")
 	assert(t, object2.isClosed, "object2 already Close()")
+
+	cache.Delete("object1")
+	assert(t, 0 == cache.Count(), "all objects should be deleted")
+	cache.Close()
 }
 
 func TestConcurrencyTTLCache(t *testing.T) {
