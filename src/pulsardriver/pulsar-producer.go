@@ -11,36 +11,45 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ProducerCache caches a list Pulsar prudcers
-// key is a string concatenated with pulsar url, token, and topic full name
-var ProducerCache = make(map[string]*PulsarProducer)
-
-var producerSync = &sync.RWMutex{}
+// ProducerCache is the cache for Producer objects
+var ProducerCache = util.NewCache(util.CacheOption{
+	TTL:           900 * time.Second,
+	CleanInterval: 902 * time.Second,
+	ExpireCallback: func(key string, value interface{}) {
+		if obj, ok := value.(*PulsarProducer); ok {
+			obj.Close()
+		} else {
+			log.Errorf("wrong PulsrProducer object type stored in Cache")
+		}
+	},
+})
 
 // GetPulsarProducer gets a Pulsar producer object
 func GetPulsarProducer(pulsarURL, pulsarToken, topic string) (pulsar.Producer, error) {
 	key := pulsarURL + pulsarToken + topic
-	producerSync.Lock()
-	prod, ok := ProducerCache[key]
-	if !ok {
-		prod = &PulsarProducer{}
-		prod.createdAt = time.Now()
-		prod.pulsarURL = pulsarURL
-		prod.token = pulsarToken
-		prod.topic = topic
-		ProducerCache[key] = prod
+	obj, exists := ProducerCache.Get(key)
+	if exists {
+		if driver, ok := obj.(*PulsarProducer); ok {
+			return driver.GetProducer()
+		}
 	}
-	producerSync.Unlock()
-	p, err := prod.GetProducer(pulsarURL, pulsarToken, topic)
+	prod := &PulsarProducer{
+		createdAt: time.Now(),
+		pulsarURL: pulsarURL,
+		token:     pulsarToken,
+		topic:     topic,
+	}
+	p, err := prod.GetProducer()
 	if err != nil {
 		// retry to close the client
 		if _, err = GetPulsarClient(pulsarURL, pulsarToken, true); err != nil {
 			return nil, err
 		}
-		if p, err = prod.GetProducer(pulsarURL, pulsarToken, topic); err != nil {
+		if p, err = prod.GetProducer(); err != nil {
 			return nil, err
 		}
 	}
+	ProducerCache.Set(key, prod)
 	return p, nil
 }
 
@@ -94,7 +103,7 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 }
 
 // GetProducer acquires a new pulsar producer
-func (c *PulsarProducer) GetProducer(pulsarURL, pulsarToken, topic string) (pulsar.Producer, error) {
+func (c *PulsarProducer) GetProducer() (pulsar.Producer, error) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -102,12 +111,12 @@ func (c *PulsarProducer) GetProducer(pulsarURL, pulsarToken, topic string) (puls
 		return c.producer, nil
 	}
 
-	driver, err := GetPulsarClient(pulsarURL, pulsarToken, false)
+	driver, err := GetPulsarClient(c.pulsarURL, c.token, false)
 	if err != nil {
 		return nil, err
 	}
 	p, err := driver.CreateProducer(pulsar.ProducerOptions{
-		Topic: topic,
+		Topic: c.topic,
 	})
 	if err != nil {
 		return nil, err
@@ -135,5 +144,5 @@ func (c *PulsarProducer) Close() {
 // Reconnect closes the current connection and reconnects again
 func (c *PulsarProducer) Reconnect() (pulsar.Producer, error) {
 	c.Close()
-	return c.GetProducer(c.pulsarURL, c.token, c.topic)
+	return c.GetProducer()
 }

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
@@ -225,4 +226,142 @@ func TestGetEnvInt(t *testing.T) {
 
 	os.Setenv("Kopper", "5o46")
 	equals(t, 946, GetEnvInt("Kopper", 946))
+}
+
+type TestObj struct {
+	isClosed bool
+}
+
+func (o *TestObj) Close() {
+	o.isClosed = true
+}
+
+func TestExpiryTTLCache(t *testing.T) {
+
+	cache := NewCache(CacheOption{
+		TTL:           10 * time.Millisecond,
+		CleanInterval: 12 * time.Millisecond,
+		ExpireCallback: func(key string, value interface{}) {
+			if obj, ok := value.(*TestObj); ok {
+				obj.Close()
+			} else {
+				assert(t, false, "wrong object type stored in Cache")
+			}
+		},
+	})
+
+	object1 := TestObj{}
+	cache.Set("object1", &object1)
+	cache.Set("object2", &TestObj{})
+	cache.Set("object3", &TestObj{})
+
+	object4 := TestObj{}
+	cache.Set("object4", &object4)
+
+	object5 := TestObj{}
+	cache.SetWithTTL("object5", &object5, 4*time.Millisecond)
+
+	obj, ok := cache.Get("object5")
+	assert(t, ok, "verify added object exists in cache")
+	assert(t, !(obj.(*TestObj).isClosed), "ensure object has not been Close()")
+	assert(t, 5 == cache.Count(), "check the counts of total number of objects in cache")
+
+	// make sure object4 won't expire
+	time.Sleep(8 * time.Millisecond)
+	_, ok = cache.Get("object5")
+	assert(t, !ok, "object5 has already expired")
+
+	_, ok = cache.Get("object4")
+	assert(t, ok, "object4 still exists")
+
+	// another 2ms expires the default TTL
+	time.Sleep(2 * time.Millisecond)
+	assert(t, 4 == cache.Count(), "all objects are expired but not purged yet")
+	_, ok = cache.Get("object1")
+	assert(t, !ok, "object has expired")
+	assert(t, object1.isClosed, "object1 has been Close() by the callback")
+	assert(t, !object4.isClosed, "object4 has not been Close() by the callback")
+	assert(t, object5.isClosed, "object5 has not been Close() by the callback")
+
+	time.Sleep(2 * time.Millisecond)
+	assert(t, 1 == cache.Count(), "check the counts of total number of objects in cache")
+	assert(t, !object4.isClosed, "object4 has not expired yet")
+
+}
+
+func TestInfinityExpiryTTLCache(t *testing.T) {
+
+	cache := NewCache(CacheOption{
+		TTL:           2 * time.Millisecond,
+		CleanInterval: 3 * time.Millisecond,
+		ExpireCallback: func(key string, value interface{}) {
+			if obj, ok := value.(*TestObj); ok {
+				obj.Close()
+			} else {
+				assert(t, false, "wrong object type stored in Cache")
+			}
+		},
+	})
+
+	object1 := TestObj{}
+	cache.SetWithTTL("object1", &object1, -1)
+
+	object2 := TestObj{}
+	cache.Set("object2", &object2)
+
+	obj, ok := cache.Get("object2")
+	assert(t, ok, "verify added object exists in cache")
+	assert(t, !(obj.(*TestObj).isClosed), "ensure object has not been Close()")
+	assert(t, 2 == cache.Count(), "check the counts of total number of objects in cache")
+
+	// make sure object4 won't expire
+	time.Sleep(4 * time.Millisecond)
+	_, ok = cache.Get("object1")
+	assert(t, ok, "object1 still exists")
+	_, ok = cache.Get("object2")
+	assert(t, !ok, "object2 already expired")
+
+	assert(t, 1 == cache.Count(), "all objects are expired but not purged yet")
+
+	assert(t, !object1.isClosed, "object1 has not expired yet")
+	assert(t, object2.isClosed, "object2 already Close()")
+}
+
+func TestConcurrencyTTLCache(t *testing.T) {
+
+	cache := NewCache(CacheOption{
+		TTL:           2 * time.Millisecond,
+		CleanInterval: 10 * time.Millisecond,
+		ExpireCallback: func(key string, value interface{}) {
+			if obj, ok := value.(*TestObj); ok {
+				obj.Close()
+			} else {
+				assert(t, false, "wrong object type stored in Cache")
+			}
+		},
+	})
+
+	for i := 0; i < 5; i++ {
+		go func(index int) {
+			cache.Set("p_object"+strconv.Itoa(index), &TestObj{})
+			fmt.Printf("added entry %s\n", "d_object"+strconv.Itoa(index))
+		}(i)
+	}
+	for i := 0; i < 8; i++ {
+		go func(index int) {
+			cache.SetWithTTL("q_object"+strconv.Itoa(index), &TestObj{}, 5*time.Millisecond)
+			fmt.Printf("added entry %s\n", "object"+strconv.Itoa(index))
+		}(i)
+	}
+	object1 := TestObj{}
+	cache.SetWithTTL("object1", &object1, 20*time.Second)
+
+	fmt.Printf("total number is %d\n", cache.Count())
+	assert(t, 14 > cache.Count(), "check the counts of total number of objects in cache")
+
+	// make sure object4 won't expire
+	time.Sleep(3 * time.Millisecond)
+	fmt.Printf("2 total number is %d\n", cache.Count())
+	assert(t, 14 == cache.Count(), "some objects have expired")
+	assert(t, !object1.isClosed, "object1 has not expired yet")
 }
