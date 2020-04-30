@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/DataDog/zstd v1.4.4 // indirect
-	github.com/apache/pulsar-client-go v0.0.0-20200214184451-fc390a6a37f3
+	github.com/apache/pulsar-client-go v0.1.1-0.20200425133951-6edc8f4ef954
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/snappy v0.0.1 // indirect
@@ -18,5 +18,4 @@ require (
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.2.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
-	golang.org/x/text v0.3.2 // indirect
 )
