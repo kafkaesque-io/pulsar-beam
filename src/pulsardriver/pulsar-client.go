@@ -61,23 +61,7 @@ func (c *PulsarClient) GetClient(url, tokenStr string) (pulsar.Client, error) {
 		return c.client, nil
 	}
 
-	clientOpt := pulsar.ClientOptions{
-		URL:               url,
-		OperationTimeout:  time.Duration(clientOpsTimeout) * time.Second,
-		ConnectionTimeout: time.Duration(clientConnectTimeout) * time.Second,
-	}
-
-	if tokenStr != "" {
-		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
-	}
-
-	if strings.HasPrefix(url, "pulsar+ssl://") {
-		trustStore := util.AssignString(util.GetConfig().TrustStore, "/etc/ssl/certs/ca-bundle.crt")
-		clientOpt.TLSTrustCertsFilePath = trustStore
-	}
-
-	driver, err := pulsar.NewClient(clientOpt)
-
+	driver, err := NewPulsarClient(url, tokenStr)
 	if err != nil {
 		log.Errorf("failed instantiate pulsar client %v", err)
 		return nil, fmt.Errorf("Could not instantiate Pulsar client: %v", err)
@@ -109,4 +93,41 @@ func (c *PulsarClient) Close() {
 func (c *PulsarClient) Reconnect() (pulsar.Client, error) {
 	c.Close()
 	return c.GetClient(c.pulsarURL, c.token)
+}
+
+// NewPulsarClient always creates a new pulsar.Client connection
+func NewPulsarClient(url, tokenStr string) (pulsar.Client, error) {
+	clientOpt := pulsar.ClientOptions{
+		URL:               url,
+		OperationTimeout:  time.Duration(clientOpsTimeout) * time.Second,
+		ConnectionTimeout: time.Duration(clientConnectTimeout) * time.Second,
+	}
+
+	if tokenStr != "" {
+		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
+	}
+
+	if strings.HasPrefix(url, "pulsar+ssl://") {
+		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
+		if trustStore == "" {
+			return nil, fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
+		}
+		clientOpt.TLSTrustCertsFilePath = trustStore
+	}
+
+	// default is false for these two configuration parameters
+	clientOpt.TLSAllowInsecureConnection = util.StringToBool(util.GetConfig().PulsarTLSAllowInsecureConnection)
+	clientOpt.TLSValidateHostname = util.StringToBool(util.GetConfig().PulsarTLSValidateHostname)
+
+	driver, err := pulsar.NewClient(clientOpt)
+
+	if err != nil {
+		log.Errorf("failed instantiate pulsar client %v", err)
+		return nil, fmt.Errorf("Could not instantiate Pulsar client: %v", err)
+	}
+	if log.GetLevel() == log.DebugLevel {
+		log.Debugf("pulsar client url %s\n token %s", url, tokenStr)
+	}
+
+	return driver, nil
 }

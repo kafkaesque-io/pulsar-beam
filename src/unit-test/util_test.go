@@ -369,3 +369,28 @@ func TestConcurrencyTTLCache(t *testing.T) {
 	assert(t, 14 == cache.Count(), "some objects have expired")
 	assert(t, !object1.isClosed, "object1 has not expired yet")
 }
+
+func TestStringToBoo(t *testing.T) {
+	// true cases
+	assert(t, StringToBool("true"), "string true yields boolean true")
+	assert(t, StringToBool("True"), "string True yields boolean true")
+	assert(t, StringToBool(" tRue"), "string tRue with space yields boolean true")
+	assert(t, StringToBool("yes"), "string true yields boolean true")
+	assert(t, StringToBool("1"), "string true yields boolean true")
+	assert(t, StringToBool("enable"), "string true yields boolean true")
+	assert(t, StringToBool(" Enabled "), "string Enabled with space yields boolean true")
+	assert(t, StringToBool("ok"), "string ok yields boolean true")
+	assert(t, StringToBool("Ok"), "string Ok yields boolean true")
+
+	// false cases
+	assert(t, !StringToBool(" "), "string space yields boolean false")
+	assert(t, !StringToBool(""), "string empty string yields boolean false")
+	assert(t, !StringToBool(" t rue"), "string t rue with space yields boolean false")
+	assert(t, !StringToBool("no"), "string no yields boolean false")
+	assert(t, !StringToBool("10"), "string 10 yields boolean false")
+	assert(t, !StringToBool("0"), "string 0 yields boolean false")
+	assert(t, !StringToBool("notok"), "string notok yields boolean false")
+	assert(t, !StringToBool("disable"), "string disable yields boolean false")
+	assert(t, !StringToBool("adsfasdf"), "string any string yields boolean false")
+
+}

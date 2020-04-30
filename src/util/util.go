@@ -110,3 +110,16 @@ func GetEnvInt(env string, defaultNum int) int {
 	}
 	return defaultNum
 }
+
+// StringToBool format various strings to boolean
+// strconv.ParseBool only covers `true` and `false` cases
+func StringToBool(str string) bool {
+	s := strings.ToLower(strings.TrimSpace(str))
+
+	// `1` is true because the default Golang boolean is initialized as false
+	if s == "true" || s == "yes" || s == "enable" || s == "enabled" || s == "1" || s == "ok" {
+		return true
+	}
+
+	return false
+}
