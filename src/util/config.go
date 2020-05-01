@@ -44,6 +44,14 @@ type Configuration struct {
 	SuperRoles       string `json:"SuperRoles"`
 	PulsarBrokerURL  string `json:"PulsarBrokerURL"`
 
+	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
+	// Set to `true` to enable
+	PulsarTLSAllowInsecureConnection string `json:"PulsarTLSAllowInsecureConnection"`
+
+	// Configure whether the Pulsar client verify the validity of the host name from broker (default: false)
+	// Set to `true` to enable
+	PulsarTLSValidateHostname string `json:"PulsarTLSValidateHostname"`
+
 	// Webhook consumers pool checked interval to stop deleted consumers and start new ones
 	// default value 180s
 	PbDbInterval string `json:"PbDbInterval"`

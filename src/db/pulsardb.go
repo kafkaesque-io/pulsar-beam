@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
+	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
 
 	log "github.com/sirupsen/logrus"
@@ -52,27 +52,13 @@ func (s *PulsarHandler) Init() error {
 	s.topicName = util.GetConfig().DbName
 	tokenStr := util.GetConfig().DbPassword
 
-	s.logger.Infof("pulsar URL: %s token: %s", pulsarURL, tokenStr)
-	clientOpt := pulsar.ClientOptions{
-		URL:               pulsarURL,
-		OperationTimeout:  30 * time.Second,
-		ConnectionTimeout: 30 * time.Second,
-	}
-
-	if tokenStr != "" {
-		clientOpt.Authentication = pulsar.NewAuthenticationToken(tokenStr)
-	}
-
-	if strings.HasPrefix(pulsarURL, "pulsar+ssl://") {
-		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
-		if trustStore == "" {
-			return fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
-		}
-		clientOpt.TLSTrustCertsFilePath = trustStore
+	s.logger.Infof("database pulsar URL: %s", pulsarURL)
+	if log.GetLevel() == log.DebugLevel {
+		s.logger.Debugf("database pulsar token string is %s", tokenStr)
 	}
 
 	var err error
-	s.client, err = pulsar.NewClient(clientOpt)
+	s.client, err = pulsardriver.NewPulsarClient(pulsarURL, tokenStr)
 	if err != nil {
 		// this would be a serious problem so that we return with error
 		return err
