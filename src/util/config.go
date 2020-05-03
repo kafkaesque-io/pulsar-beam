@@ -149,8 +149,8 @@ func ReadConfigFile(configFile string) {
 		Config.PORT, Config.PbDbType, Config.PbDbInterval, Config.TrustStore, Config.DbName, Config.DbConnectionStr)
 	fmt.Printf("PublicKey %s, PrivateKey %s\n",
 		Config.PulsarPublicKey, Config.PulsarPrivateKey)
-	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v\n",
-		Config.PulsarBrokerURL, AllowedPulsarURLs)
+	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v,PulsarTLSAllowInsecureConnection %s,PulsarTLSValidateHostname %s\n",
+		Config.PulsarBrokerURL, AllowedPulsarURLs, Config.PulsarTLSAllowInsecureConnection, Config.PulsarTLSValidateHostname)
 }
 
 //GetConfig returns a reference to the Configuration
