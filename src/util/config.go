@@ -20,29 +20,40 @@ import (
 // it can be overwritten by env variable PULSAR_BEAM_CONFIG
 const DefaultConfigFile = "../config/pulsar_beam.yml"
 
-// Configuration - this server's configuration
+// Configuration has a set of parameters to configure the beam server.
+// The same name can be used in environment variable to override yml or json values.
 type Configuration struct {
-	PORT     string `json:"PORT"`
-	CLUSTER  string `json:"CLUSTER"`
-	LogLevel string `json:"LogLevel"`
-	User     string `json:"User"`
-	Pass     string `json:"Pass"`
+	// PORT is the http port
+	PORT string `json:"PORT"`
 
-	// DbName is the database name in mongo or topic name
+	// CLUSTER is the Plusar cluster
+	CLUSTER string `json:"CLUSTER"`
+
+	// LogLevel is used to set the application log level
+	LogLevel string `json:"LogLevel"`
+
+	// DbName is the database name in mongo or topic name when Pulsar is used as database
 	DbName string `json:"DbName"`
 
-	// DbPassword is either password or token for the database
+	// DbPassword is either password or token when Pulsar is used as database
 	DbPassword string `json:"DbPassword"`
 
 	// DbConnectionStr can be mongo url or pulsar url
 	DbConnectionStr string `json:"DbConnectionStr"`
 
 	// PbDbType is the database type mongo or pulsar
-	PbDbType         string `json:"PbDbType"`
+	PbDbType string `json:"PbDbType"`
+
+	// Pulsar public and private keys are used to encrypt and decrypt tokens
+	// They are used by tokenServer end point and authorize Pulsar JWT subject
 	PulsarPublicKey  string `json:"PulsarPublicKey"`
 	PulsarPrivateKey string `json:"PulsarPrivateKey"`
-	SuperRoles       string `json:"SuperRoles"`
-	PulsarBrokerURL  string `json:"PulsarBrokerURL"`
+
+	// SuperRoles are Pulsar JWT superroles for authorization
+	SuperRoles string `json:"SuperRoles"`
+
+	// PulsarBrokerURL is the Pulsar Broker URL to allow direct connection to the broker
+	PulsarBrokerURL string `json:"PulsarBrokerURL"`
 
 	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
 	// Set to `true` to enable
@@ -52,22 +63,23 @@ type Configuration struct {
 	// Set to `true` to enable
 	PulsarTLSValidateHostname string `json:"PulsarTLSValidateHostname"`
 
-	// Webhook consumers pool checked interval to stop deleted consumers and start new ones
+	// PbDbInterval is the interval the webhook brokers poll the database for updates in Mongo.
+	// Pulsar as database has more realtime update feature.
 	// default value 180s
 	PbDbInterval string `json:"PbDbInterval"`
 
 	// Pulsar CA certificate key store
 	TrustStore string `json:"TrustStore"`
 
-	// TLS
+	// HTTPs certificate set up
 	CertFile string `json:"CertFile"`
 	KeyFile  string `json:"KeyFile"`
 
-	// PulsarClusters enforce that Beam only can connect to the specified clusters
+	// PulsarClusters enforce Beam are only allowed to connect to the specified clusters
 	// It is a comma separated pulsar URL string, so it can be a list of clusters
 	PulsarClusters string `json:"PulsarClusters"`
 
-	// HTTPAuthImpl specifies the jwt authen and authorization algorithm, `noauth` to skip authentication
+	// HTTPAuthImpl specifies the jwt authen and authorization algorithm, `noauth` to skip JWT authentication
 	HTTPAuthImpl string `json:"HTTPAuthImpl"`
 }
 
@@ -149,8 +161,8 @@ func ReadConfigFile(configFile string) {
 		Config.PORT, Config.PbDbType, Config.PbDbInterval, Config.TrustStore, Config.DbName, Config.DbConnectionStr)
 	fmt.Printf("PublicKey %s, PrivateKey %s\n",
 		Config.PulsarPublicKey, Config.PulsarPrivateKey)
-	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v\n",
-		Config.PulsarBrokerURL, AllowedPulsarURLs)
+	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v,PulsarTLSAllowInsecureConnection %s,PulsarTLSValidateHostname %s\n",
+		Config.PulsarBrokerURL, AllowedPulsarURLs, Config.PulsarTLSAllowInsecureConnection, Config.PulsarTLSValidateHostname)
 }
 
 //GetConfig returns a reference to the Configuration

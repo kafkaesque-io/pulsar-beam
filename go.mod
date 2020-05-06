@@ -19,3 +19,6 @@ require (
 	go.mongodb.org/mongo-driver v1.2.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
 )
+
+// temporary pulsar client until https://github.com/apache/pulsar-client-go/pull/238 can be merged
+replace github.com/apache/pulsar-client-go => github.com/zzzming/pulsar-client-go v0.0.0-20200503173951-66e589ab9740
