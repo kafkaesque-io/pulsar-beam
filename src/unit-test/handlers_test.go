@@ -69,6 +69,19 @@ func TestTopicHandler(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	equals(t, http.StatusCreated, rr.Code)
 
+	// test create topic config under a different tenant
+	topic.TopicFullName = "persistent://another-tenant/local-useast1-gcp/yet-another-test-topic"
+	reqJSON, err = json.Marshal(topic)
+	errNil(t, err)
+	// test create a new topic
+	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
+	errNil(t, err)
+
+	handler = http.HandlerFunc(UpdateTopicHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusForbidden, rr.Code)
+
 	// test update the newly created topic
 	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
 	errNil(t, err)
@@ -167,6 +180,13 @@ func TestSubjectMatch(t *testing.T) {
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234"), "")
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234,myadmin"), "")
 	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picaso-1234,myadmin"), "")
+
+	// support <tenant>-client-<hash> subject
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-client-1234"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "ad, picasso-client-1234"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-client-1234, admin"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-client/local-useast1-gcp/yet-another-test-topic", "picasso-client-client-1234, admin"), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-client-client-1234, admin"), "")
 
 	originalSuperRoles := util.SuperRoles
 	util.SuperRoles = []string{}

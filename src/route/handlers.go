@@ -78,6 +78,10 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusServiceUnavailable)
 		return
 	}
+	if pulsarAsync {
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	return
 }
@@ -125,13 +129,13 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = model.ValidateTopicConfig(doc); err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
-		w.WriteHeader(http.StatusForbidden)
+	if _, err = model.ValidateTopicConfig(doc); err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -234,20 +238,46 @@ func VerifySubjectBasedOnTopic(topicFN, tokenSub string) bool {
 // VerifySubject verifies the subject can meet the requirement.
 // Subject verification requires role or tenant name in the jwt subject
 func VerifySubject(requiredSubject, tokenSubjects string) bool {
-	for _, v := range strings.Split(tokenSubjects, ",") {
+	for _, pv := range strings.Split(tokenSubjects, ",") {
+		v := strings.TrimSpace(pv)
+
 		if util.StrContains(util.SuperRoles, v) {
 			return true
 		}
 		if requiredSubject == v {
 			return true
 		}
-		sub := extractTenant(v)
-		if sub != "" && requiredSubject == sub {
+		subCase1, subCase2 := ExtractTenant(v)
+		if true == (requiredSubject == subCase1 || requiredSubject == subCase2) {
 			return true
 		}
 	}
 
 	return false
+}
+
+// ExtractTenant attempts to extract tenant based on delimiter `-` and `-client-`
+// so that it will covercases such as 1. my-tenant-12345qbc
+// 2. my-tenant-client-12345qbc
+// 3. my-tenant
+// 4. my-tenant-client-client-12345qbc
+func ExtractTenant(tokenSub string) (string, string) {
+	var case1 string
+	// expect `-` in subject unless it is superuser, or admin
+	// so return them as is
+	parts := strings.Split(tokenSub, subDelimiter)
+	if len(parts) < 2 {
+		return tokenSub, tokenSub
+	}
+
+	// cases to cover with only `-` as delimiter
+	validLength := len(parts) - 1
+	case1 = strings.Join(parts[:validLength], subDelimiter)
+
+	if parts[validLength-1] == "client" {
+		return case1, strings.Join(parts[:(validLength-1)], subDelimiter)
+	}
+	return case1, case1
 }
 
 func extractTenant(tokenSub string) string {
