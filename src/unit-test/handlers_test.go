@@ -69,6 +69,19 @@ func TestTopicHandler(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	equals(t, http.StatusCreated, rr.Code)
 
+	// test create topic config under a different tenant
+	topic.TopicFullName = "persistent://another-tenant/local-useast1-gcp/yet-another-test-topic"
+	reqJSON, err = json.Marshal(topic)
+	errNil(t, err)
+	// test create a new topic
+	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
+	errNil(t, err)
+
+	handler = http.HandlerFunc(UpdateTopicHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusForbidden, rr.Code)
+
 	// test update the newly created topic
 	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
 	errNil(t, err)
