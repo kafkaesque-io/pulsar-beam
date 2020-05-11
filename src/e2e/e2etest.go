@@ -84,11 +84,12 @@ func addWebhookToDb() string {
 		log.Fatal("Invalid topic config ", err)
 	}
 
+	// test 403 add a configuration under another topic
 	reqJSON, err := json.Marshal(topicConfig)
 	if err != nil {
 		log.Fatal("Topic marshalling error Error reading request. ", err)
 	}
-	log.Println("create topic and webhook with REST call")
+	log.Println("create topic under another tenant and webhook with REST call")
 	req, err := http.NewRequest("POST", restURL, bytes.NewBuffer(reqJSON))
 	if err != nil {
 		log.Fatal("Error reading request. ", err)
@@ -101,6 +102,33 @@ func addWebhookToDb() string {
 
 	// Send request
 	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response from Beam. ", err)
+	}
+	defer resp.Body.Close()
+
+	log.Printf("post call to rest API statusCode %d", resp.StatusCode)
+	eval(resp.StatusCode == http.StatusForbidden, "expected rest api status code is 403")
+
+	// successful test with matching subject and tenant
+	topicConfig.TopicFullName = webhookTopic
+	reqJSON, err = json.Marshal(topicConfig)
+	if err != nil {
+		log.Fatal("Topic marshalling error Error reading request. ", err)
+	}
+	log.Println("create topic and webhook with REST call")
+	req, err = http.NewRequest("POST", restURL, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		log.Fatal("Error reading request. ", err)
+	}
+
+	req.Header.Set("Authorization", restAPIToken)
+
+	// Set client timeout
+	client = &http.Client{Timeout: time.Second * 10}
+
+	// Send request
+	resp, err = client.Do(req)
 	if err != nil {
 		log.Fatal("Error reading response from Beam. ", err)
 	}

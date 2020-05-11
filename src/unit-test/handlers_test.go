@@ -168,6 +168,13 @@ func TestSubjectMatch(t *testing.T) {
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234,myadmin"), "")
 	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picaso-1234,myadmin"), "")
 
+	// support <tenant>-client-<hash> subject
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-client-1234"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "ad, picasso-client-1234"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-client-1234, admin"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-client/local-useast1-gcp/yet-another-test-topic", "picasso-client-client-1234, admin"), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-client-client-1234, admin"), "")
+
 	originalSuperRoles := util.SuperRoles
 	util.SuperRoles = []string{}
 	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
