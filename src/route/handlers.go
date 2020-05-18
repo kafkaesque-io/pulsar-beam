@@ -97,7 +97,7 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
-	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs"), ExtractEvalTenant) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -130,7 +130,7 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs"), ExtractEvalTenant) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -173,7 +173,7 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusNotFound)
 		return
 	}
-	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs")) {
+	if !VerifySubjectBasedOnTopic(doc.TopicFullName, r.Header.Get("injectedSubs"), ExtractEvalTenant) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -218,7 +218,7 @@ func getTopicKey(r *http.Request) (string, error) {
 }
 
 // VerifySubjectBasedOnTopic verifies the subject can meet the requirement.
-func VerifySubjectBasedOnTopic(topicFN, tokenSub string) bool {
+func VerifySubjectBasedOnTopic(topicFN, tokenSub string, evalTenant func(tenant, subjects string) bool) bool {
 	parts := strings.Split(topicFN, "/")
 	if len(parts) < 4 {
 		return false
@@ -228,12 +228,12 @@ func VerifySubjectBasedOnTopic(topicFN, tokenSub string) bool {
 		log.Infof(" auth verify tenant %s token sub %s", tenant, tokenSub)
 		return false
 	}
-	return VerifySubject(tenant, tokenSub)
+	return VerifySubject(tenant, tokenSub, evalTenant)
 }
 
 // VerifySubject verifies the subject can meet the requirement.
 // Subject verification requires role or tenant name in the jwt subject
-func VerifySubject(requiredSubject, tokenSubjects string) bool {
+func VerifySubject(requiredSubject, tokenSubjects string, evalTenant func(tenant, subjects string) bool) bool {
 	for _, v := range strings.Split(tokenSubjects, ",") {
 		if util.StrContains(util.SuperRoles, v) {
 			return true
@@ -241,8 +241,7 @@ func VerifySubject(requiredSubject, tokenSubjects string) bool {
 		if requiredSubject == v {
 			return true
 		}
-		sub := extractTenant(v)
-		if sub != "" && requiredSubject == sub {
+		if evalTenant(requiredSubject, v) {
 			return true
 		}
 	}
@@ -250,13 +249,19 @@ func VerifySubject(requiredSubject, tokenSubjects string) bool {
 	return false
 }
 
-func extractTenant(tokenSub string) string {
+// ExtractEvalTenant is a cumtomized fcuntio to evaluate subject against tenant
+func ExtractEvalTenant(requiredSubject, tokenSub string) bool {
 	// expect - in subject unless it is superuser
+	var sub string
 	parts := strings.Split(tokenSub, subDelimiter)
 	if len(parts) < 2 {
-		return parts[0]
+		sub = parts[0]
 	}
 
 	validLength := len(parts) - 1
-	return strings.Join(parts[:validLength], subDelimiter)
+	sub = strings.Join(parts[:validLength], subDelimiter)
+	if sub != "" && requiredSubject == sub {
+		return true
+	}
+	return false
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/route"
+	"github.com/kafkaesque-io/pulsar-beam/src/util"
 	. "github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
@@ -56,10 +57,18 @@ func TestAssignString(t *testing.T) {
 func TestLoadConfigFile(t *testing.T) {
 
 	os.Setenv("PORT", "9876543")
+	assert(t, "" == os.Getenv("PbDbInterval"), "OS env updated with config file")
 	ReadConfigFile("../" + DefaultConfigFile)
 	config := GetConfig()
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")
-	assert(t, config.PbDbType == "mongo", "default config setting")
+	assert(t, config.PbDbInterval == "10s", "default config setting")
+	assert(t, os.Getenv("PbDbInterval") == "10s", "default config setting")
+
+	assert(t, false == util.StringToBool(os.Getenv("PulsarTLSAllowInsecureConnection")), "")
+
+	assert(t, os.Getenv("PulsarTLSValidateHostname") == "", "PulsarTLSValidateHostname default config from env")
+	assert(t, false == util.StringToBool(os.Getenv("PulsarTLSValidateHostname")), "PulsarTLSValidateHostname false as the default config from env")
+	assert(t, os.Getenv("PbDbInterval") == "10s", "default config setting")
 
 	dbType := "inmemory2"
 	os.Setenv("PbDbType", dbType)
@@ -84,6 +93,8 @@ func TestEffectiveRoutes(t *testing.T) {
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check required tokenserver routes")
 	mode = "http"
 	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen+receiverRoutesLen+restRoutesLen), "check required http routes")
+	mode = "http2"
+	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen+receiverRoutesLen), "check required http2 routes")
 }
 
 func TestHTTPRouters(t *testing.T) {
@@ -116,6 +127,12 @@ func TestMainControlMode(t *testing.T) {
 	assert(t, IsValidMode(&mode), "")
 
 	mode = "tokenserver"
+	assert(t, IsHTTPRouterRequired(&mode), "")
+	assert(t, IsBrokerRequired(&mode) == false, "")
+	assert(t, IsBroker(&mode) == false, "")
+	assert(t, IsValidMode(&mode), "")
+
+	mode = "http2"
 	assert(t, IsHTTPRouterRequired(&mode), "")
 	assert(t, IsBrokerRequired(&mode) == false, "")
 	assert(t, IsBroker(&mode) == false, "")
