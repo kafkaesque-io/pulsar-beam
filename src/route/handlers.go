@@ -161,7 +161,7 @@ func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteTopicHandler deletes a topic
 func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
-	topicKey, err := getTopicKey(r)
+	topicKey, err := GetTopicKey(r)
 	if err != nil {
 		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
 		return
