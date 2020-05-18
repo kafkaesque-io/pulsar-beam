@@ -69,6 +69,22 @@ func TestTopicHandler(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	equals(t, http.StatusCreated, rr.Code)
 
+	// test create topic config under a different tenant
+	topic.TopicFullName = "persistent://another-tenant/local-useast1-gcp/yet-another-test-topic"
+	reqJSON, err = json.Marshal(topic)
+	errNil(t, err)
+	// test create a new topic
+	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
+	errNil(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("injectedSubs", "picasso")
+
+	handler = http.HandlerFunc(UpdateTopicHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusForbidden, rr.Code)
+
 	// test update the newly created topic
 	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
 	errNil(t, err)
@@ -157,22 +173,22 @@ func TestFireHoseReceiverHandler(t *testing.T) {
 }
 
 func TestSubjectMatch(t *testing.T) {
-	assert(t, !VerifySubjectBasedOnTopic("picasso", "picasso"), "")
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp", "picasso"), "")
-	assert(t, !VerifySubjectBasedOnTopic("picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso"), "")
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet"), "")
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet-1234"), "")
-	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "myadmin"), "")
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234"), "")
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234,myadmin"), "")
-	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picaso-1234,myadmin"), "")
+	assert(t, !VerifySubjectBasedOnTopic("picasso", "picasso", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp", "picasso", ExtractEvalTenant), "")
+	assert(t, !VerifySubjectBasedOnTopic("picasso/local-useast1-gcp/yet-another-test-topic", "picasso", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso-monet/local-useast1-gcp/yet-another-test-topic", "picasso-monet-1234", ExtractEvalTenant), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "myadmin", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picasso-1234,myadmin", ExtractEvalTenant), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "picaso-1234,myadmin", ExtractEvalTenant), "")
 
 	originalSuperRoles := util.SuperRoles
 	util.SuperRoles = []string{}
-	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
+	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser", ExtractEvalTenant), "")
 	util.SuperRoles = []string{"superuser", "admin"}
-	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser"), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser", ExtractEvalTenant), "")
 	util.SuperRoles = originalSuperRoles
 }
 

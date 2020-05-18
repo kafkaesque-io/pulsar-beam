@@ -2,6 +2,7 @@ package pulsardriver
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -108,7 +109,7 @@ func NewPulsarClient(url, tokenStr string) (pulsar.Client, error) {
 	}
 
 	if strings.HasPrefix(url, "pulsar+ssl://") {
-		trustStore := util.GetConfig().TrustStore //"/etc/ssl/certs/ca-bundle.crt"
+		trustStore := os.Getenv("TrustStore") //"/etc/ssl/certs/ca-bundle.crt" all Config is also written back to OS ENV
 		if trustStore == "" {
 			return nil, fmt.Errorf("this is fatal that we are missing trustStore while pulsar+ssl is required")
 		}
@@ -116,8 +117,8 @@ func NewPulsarClient(url, tokenStr string) (pulsar.Client, error) {
 	}
 
 	// default is false for these two configuration parameters
-	clientOpt.TLSAllowInsecureConnection = util.StringToBool(util.GetConfig().PulsarTLSAllowInsecureConnection)
-	clientOpt.TLSValidateHostname = util.StringToBool(util.GetConfig().PulsarTLSValidateHostname)
+	clientOpt.TLSAllowInsecureConnection = util.StringToBool(os.Getenv("PulsarTLSAllowInsecureConnection"))
+	clientOpt.TLSValidateHostname = util.StringToBool(os.Getenv("PulsarTLSValidateHostname"))
 
 	driver, err := pulsar.NewClient(clientOpt)
 

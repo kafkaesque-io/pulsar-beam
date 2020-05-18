@@ -33,32 +33,27 @@ type liveSignal struct{}
 
 // PulsarHandler is the Pulsar database driver
 type PulsarHandler struct {
-	client     pulsar.Client
-	producer   pulsar.Producer
-	topics     map[string]model.TopicConfig
-	topicName  string
-	topicsLock sync.RWMutex
-	logger     *log.Entry
+	pulsarURL   string
+	pulsarToken string
+	topicName   string
+	topicsLock  sync.RWMutex
+	client      pulsar.Client
+	producer    pulsar.Producer
+	topics      map[string]model.TopicConfig
+	logger      *log.Entry
 }
 
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
-	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
 	s.topics = make(map[string]model.TopicConfig)
-	pulsarURL := util.GetConfig().PulsarBrokerURL
-	if strings.HasPrefix(util.GetConfig().DbConnectionStr, "pulsar") {
-		pulsarURL = util.GetConfig().DbConnectionStr
-	}
-	s.topicName = util.GetConfig().DbName
-	tokenStr := util.GetConfig().DbPassword
 
-	s.logger.Infof("database pulsar URL: %s", pulsarURL)
+	s.logger.Infof("database pulsar URL: %s", s.pulsarURL)
 	if log.GetLevel() == log.DebugLevel {
-		s.logger.Debugf("database pulsar token string is %s", tokenStr)
+		s.logger.Debugf("database pulsar token string is %s", s.pulsarToken)
 	}
 
 	var err error
-	s.client, err = pulsardriver.NewPulsarClient(pulsarURL, tokenStr)
+	s.client, err = pulsardriver.NewPulsarClient(s.pulsarURL, s.pulsarToken)
 	if err != nil {
 		// this would be a serious problem so that we return with error
 		return err
@@ -159,7 +154,15 @@ func (s *PulsarHandler) Close() error {
 
 //NewPulsarHandler initialize a Pulsar Db
 func NewPulsarHandler() (*PulsarHandler, error) {
-	handler := PulsarHandler{}
+	handler := PulsarHandler{
+		logger: log.WithFields(log.Fields{"app": "pulsardb"}),
+	}
+	handler.pulsarURL = util.GetConfig().PulsarBrokerURL
+	if strings.HasPrefix(util.GetConfig().DbConnectionStr, "pulsar") {
+		handler.pulsarURL = util.GetConfig().DbConnectionStr
+	}
+	handler.topicName = util.GetConfig().DbName
+	handler.pulsarToken = util.GetConfig().DbPassword
 	err := handler.Init()
 	return &handler, err
 }

@@ -139,12 +139,14 @@ func ReadConfigFile(configFile string) {
 	st := values.Elem()
 	for i := 0; i < fields.NumField(); i++ {
 		field := fields.Field(i).Name
-		envV := os.Getenv(field)
-		if len(envV) > 0 {
-			f := st.FieldByName(field)
-			if f.IsValid() && f.CanSet() && f.Kind() == reflect.String {
+		f := st.FieldByName(field)
+
+		if f.Kind() == reflect.String {
+			envV := os.Getenv(field)
+			if len(envV) > 0 && f.IsValid() && f.CanSet() {
 				f.SetString(strings.TrimSuffix(envV, "\n")) // ensure no \n at the end of line that was introduced by loading k8s secrete file
 			}
+			os.Setenv(field, f.String())
 		}
 	}
 
