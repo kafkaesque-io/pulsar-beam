@@ -33,9 +33,9 @@ type liveSignal struct{}
 
 // PulsarHandler is the Pulsar database driver
 type PulsarHandler struct {
-	pulsarURL   string
-	pulsarToken string
-	topicName   string
+	PulsarURL   string
+	PulsarToken string
+	TopicName   string
 	topicsLock  sync.RWMutex
 	client      pulsar.Client
 	producer    pulsar.Producer
@@ -45,15 +45,16 @@ type PulsarHandler struct {
 
 //Init is a Db interface method.
 func (s *PulsarHandler) Init() error {
+	s.logger = log.WithFields(log.Fields{"app": "pulsardb"})
 	s.topics = make(map[string]model.TopicConfig)
 
-	s.logger.Infof("database pulsar URL: %s", s.pulsarURL)
+	s.logger.Infof("database pulsar URL: %s", s.PulsarURL)
 	if log.GetLevel() == log.DebugLevel {
-		s.logger.Debugf("database pulsar token string is %s", s.pulsarToken)
+		s.logger.Debugf("database pulsar token string is %s", s.PulsarToken)
 	}
 
 	var err error
-	s.client, err = pulsardriver.NewPulsarClient(s.pulsarURL, s.pulsarToken)
+	s.client, err = pulsardriver.NewPulsarClient(s.PulsarURL, s.PulsarToken)
 	if err != nil {
 		// this would be a serious problem so that we return with error
 		return err
@@ -89,7 +90,7 @@ func (s *PulsarHandler) dbListener(sig chan *liveSignal) error {
 	}(sig)
 	s.logger.Infof("listens to pulsar wh database changes")
 	reader, err := s.client.CreateReader(pulsar.ReaderOptions{
-		Topic:          s.topicName,
+		Topic:          s.TopicName,
 		StartMessageID: pulsar.EarliestMessageID(),
 		ReadCompacted:  true,
 	})
@@ -128,7 +129,7 @@ func (s *PulsarHandler) dbListener(sig chan *liveSignal) error {
 func (s *PulsarHandler) createProducer() error {
 	var err error
 	s.producer, err = s.client.CreateProducer(pulsar.ProducerOptions{
-		Topic:           s.topicName,
+		Topic:           s.TopicName,
 		DisableBatching: true,
 	})
 	return err
@@ -157,12 +158,12 @@ func NewPulsarHandler() (*PulsarHandler, error) {
 	handler := PulsarHandler{
 		logger: log.WithFields(log.Fields{"app": "pulsardb"}),
 	}
-	handler.pulsarURL = util.GetConfig().PulsarBrokerURL
+	handler.PulsarURL = util.GetConfig().PulsarBrokerURL
 	if strings.HasPrefix(util.GetConfig().DbConnectionStr, "pulsar") {
-		handler.pulsarURL = util.GetConfig().DbConnectionStr
+		handler.PulsarURL = util.GetConfig().DbConnectionStr
 	}
-	handler.topicName = util.GetConfig().DbName
-	handler.pulsarToken = util.GetConfig().DbPassword
+	handler.TopicName = util.GetConfig().DbName
+	handler.PulsarToken = util.GetConfig().DbPassword
 	err := handler.Init()
 	return &handler, err
 }

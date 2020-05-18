@@ -84,7 +84,7 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetTopicHandler gets the topic details
 func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
-	topicKey, err := getTopicKey(r)
+	topicKey, err := GetTopicKey(r)
 	if err != nil {
 		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
 		return
@@ -193,7 +193,8 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getTopicKey(r *http.Request) (string, error) {
+// GetTopicKey gets the topic key from the request body or url sub route
+func GetTopicKey(r *http.Request) (string, error) {
 	var err error
 	vars := mux.Vars(r)
 	topicKey, ok := vars["topicKey"]
