@@ -189,6 +189,7 @@ func TestSubjectMatch(t *testing.T) {
 	assert(t, !VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser", ExtractEvalTenant), "")
 	util.SuperRoles = []string{"superuser", "admin"}
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "superuser", ExtractEvalTenant), "")
+	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp/yet-another-test-topic", "admin", ExtractEvalTenant), "")
 	util.SuperRoles = originalSuperRoles
 }
 
