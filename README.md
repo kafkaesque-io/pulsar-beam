@@ -8,18 +8,18 @@
 
 # Pulsar Beam
 
-Beam is an http based streaming and queueing system that is backed up by Apache Pulsar.
+Beam is an http based streaming and queueing system backed up by Apache Pulsar.
 
-1. Data can be sent to Pulsar via an HTTP POST method as a producer.
-2. Data can be pushed to a webhook or Cloud Function for consumption.
-3. A webhook or Cloud Function can reply processed message, in the response body, back to another Pulsar topic via Pulsar Beam.
+1. A message can be sent to Pulsar via an HTTP POST method as a producer.
+2. A message can be pushed to a webhook or Cloud Function for consumption.
+3. A webhook or Cloud Function receives a message, process it and reply another message, in a response body, back to another Pulsar topic via Pulsar Beam.
 
 Opening an issue and PR are welcomed! Please email `contact@kafkaesque.io` for any inquiry or demo.
 
 ## Advantages
-1. Since Beam speaks http, it is language and OS independent. You can take advantage of powerhouse of Apache Pulsar without limitation to choice of client and OS.
+1. Since Beam speaks http, it is language and OS independent. You can take advantage of powerhouse of Apache Pulsar without limitation of client library and OS.
 
-Immediately, Pulsar can be supported on Windows and any languages.
+Immediately, Pulsar can be supported on Windows and any languages with HTTP support.
 
 2. It has a very small footprint with a 15MB docker image size.
 
@@ -27,7 +27,8 @@ Immediately, Pulsar can be supported on Windows and any languages.
 
 REST API and endpoint swagger document is published at [this link](https://kafkaesque-io.github.io/pulsar-beam-swagger/)
 
-### Endpoint to receive messages
+### Endpoint to send messages
+This is the endpoint to `POST` a message to Pulsar. 
 
 ```
 /v1/firehose
@@ -35,18 +36,24 @@ REST API and endpoint swagger document is published at [this link](https://kafka
 These HTTP headers are required to map to Pulsar topic.
 1. Authorization -> Bearer token as Pulsar token
 2. TopicFn -> a full name of Pulsar topic (with tenant/namespace/topic) is required
-3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL is required
+3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
 
 ### Webhook registration
-Webhook registration is done via REST API backed by configurable database, such as MongoDB, in momery cache, and Pulsar topic. Yes, you can use a compacted Pulsar Topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.
+Webhook registration is done via REST API backed by a database of your choice, such as MongoDB, in momery cache, and Pulsar itself. Yes, you can use a compacted Pulsar topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.
 
-### Server configuration
-
-Both [json](./config/pulsar_beam.json) and [yml format](./config/pulsar_beam.yml) are supported as configuration file. The configuration paramters are specified by [config.go](https://github.com/kafkaesque-io/pulsar-beam/blob/master/src/util/config.go#L25). Every parameter can be overridden by the same name environment variable.
+#### Webhook or Cloud function management API
+The management REAT API has this endpoint. Here is [the swagger document](https://kafkaesque-io.github.io/pulsar-beam-swagger/#/Create-or-Update-Topic)
+```
+/v2/topic
+```
 
 ### Sink source
 
-If a webhook's response contains a body and three headers including `Authorization` for Pulsar JWT, `TopicFn` for a topic fully qualified name, and `PulsarUrl`, the beam server will send the body as a new event to another Pulsar's topic specified as in TopicFn and PulsarUrl.
+If a webhook's response contains a body and three headers including `Authorization` for Pulsar JWT, `TopicFn` for a topic fully qualified name, and `PulsarUrl`, the beam server will send the body as a new message to the Pulsar's topic specified as in TopicFn and PulsarUrl.
+
+### Server configuration
+
+Both [json](./config/pulsar_beam.json) and [yml format](./config/pulsar_beam.yml) are supported as configuration file. The configuration paramters are specified by [config.go](https://github.com/kafkaesque-io/pulsar-beam/blob/master/src/util/config.go#L25). Every parameter can be overridden by an environment variable with the same name.
 
 #### Server Mode
 In order to offer high performance and division of responsiblity, webhook and receiver endpoint can run independently `-mode broker` or `-mode receiver`. By default, the server runs in a hybrid mode with all features running in the same process.
