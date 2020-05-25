@@ -1,3 +1,4 @@
+[![Join the chat at https://gitter.im/FaradayRF/Lobby](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/kafkaesque-io/community?utm_source=badge&utm_medium=badge&utm_content=badge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kafkaesque-io/pulsar-beam)](https://goreportcard.com/report/github.com/kafkaesque-io/pulsar-beam)
 [![CI Build](https://github.com/kafkaesque-io/pulsar-beam/workflows/ci/badge.svg
 )](https://github.com/kafkaesque-io/pulsar-beam/actions)
