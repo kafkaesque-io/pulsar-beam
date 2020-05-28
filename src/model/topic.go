@@ -155,8 +155,8 @@ func GetSubscriptionType(subType string) (pulsar.SubscriptionType, error) {
 // which are just DSL and sometime these library just like fit square peg in a round hole.
 // Explicit validation has no dependency and very specific.
 func ValidateWebhookConfig(whs []WebhookConfig) error {
-	// keeps track of execlusive subscription name
-	execlusiveSubs := make(map[string]bool)
+	// keeps track of exclusive subscription name
+	exclusiveSubs := make(map[string]bool)
 	for _, wh := range whs {
 		if !isURL(wh.URL) {
 			return fmt.Errorf("not a URL %s", wh.URL)
@@ -166,10 +166,10 @@ func ValidateWebhookConfig(whs []WebhookConfig) error {
 		}
 		if subType, err := GetSubscriptionType(wh.SubscriptionType); err == nil {
 			if subType == pulsar.Exclusive {
-				if execlusiveSubs[wh.Subscription] {
-					return fmt.Errorf("execlusive subscription %s cannot be shared between multiple webhooks", wh.Subscription)
+				if exclusiveSubs[wh.Subscription] {
+					return fmt.Errorf("exclusive subscription %s cannot be shared between multiple webhooks", wh.Subscription)
 				}
-				execlusiveSubs[wh.Subscription] = true
+				exclusiveSubs[wh.Subscription] = true
 			}
 		} else {
 			return err

@@ -298,8 +298,8 @@ func TestTopicModelFunctions(t *testing.T) {
 			Subscription: "duplicatedSubname",
 		},
 	})
-	assert(t, strings.HasPrefix(err.Error(), "execlusive subscription duplicatedSubname"),
-		"test error condition for duplicated execlusive subscription name")
+	assert(t, strings.HasPrefix(err.Error(), "exclusive subscription duplicatedSubname"),
+		"test error condition for duplicated exclusive subscription name")
 
 	err = model.ValidateWebhookConfig([]model.WebhookConfig{
 		model.WebhookConfig{
