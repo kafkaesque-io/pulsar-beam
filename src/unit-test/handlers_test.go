@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/gorilla/mux"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	. "github.com/kafkaesque-io/pulsar-beam/src/route"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
@@ -30,11 +31,34 @@ func TestStatusAPI(t *testing.T) {
 
 }
 
+func TestTokenServerHandler(t *testing.T) {
+	os.Setenv("PULSAR_BEAM_CONFIG", "../../config/pulsar_beam.json")
+	os.Setenv("PulsarPrivateKey", "../unit-test/example_private_key")
+	os.Setenv("PulsarPublicKey", "../unit-test/example_public_key.pub")
+	util.Init()
+
+	// create a GET request
+	req, err := http.NewRequest(http.MethodGet, "/subject", nil)
+	errNil(t, err)
+
+	req = mux.SetURLVars(req, map[string]string{"sub": "auser"})
+
+	rr := httptest.NewRecorder()
+	req.Header.Set("injectedSubs", "myadmin")
+
+	util.SuperRoles = []string{"myadmin"}
+
+	handler := http.HandlerFunc(TokenSubjectHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusOK, rr.Code)
+
+}
 func TestTopicHandler(t *testing.T) {
 	// bootstrap set up
 	os.Setenv("PULSAR_BEAM_CONFIG", "../../config/pulsar_beam.json")
-	os.Setenv("PulsarPublicKey", "./example_private_key")
-	os.Setenv("PulsarPrivateKey", "./example_public_key.pub")
+	os.Setenv("PulsarPrivateKey", "./example_private_key")
+	os.Setenv("PulsarPublicKey", "./example_public_key.pub")
 	os.Setenv("CLUSTER", "unittest")
 	util.Init()
 	Init()
@@ -241,7 +265,6 @@ func TestTopicConfig(t *testing.T) {
 }
 
 // test other topic model functions
-
 func TestTopicModelFunctions(t *testing.T) {
 	subType, err := model.GetSubscriptionType("")
 	errNil(t, err)
@@ -265,4 +288,29 @@ func TestTopicModelFunctions(t *testing.T) {
 	}
 	err = model.ValidateWebhookConfig([]model.WebhookConfig{wh})
 	assert(t, strings.HasPrefix(err.Error(), "not a URL"), "test not a URL error in webhook config")
+
+	err = model.ValidateWebhookConfig([]model.WebhookConfig{
+		model.WebhookConfig{
+			URL:          "http://host.com:8080",
+			Subscription: "duplicatedSubname",
+		}, model.WebhookConfig{
+			URL:          "http://host.com:8080",
+			Subscription: "duplicatedSubname",
+		},
+	})
+	assert(t, strings.HasPrefix(err.Error(), "execlusive subscription duplicatedSubname"),
+		"test error condition for duplicated execlusive subscription name")
+
+	err = model.ValidateWebhookConfig([]model.WebhookConfig{
+		model.WebhookConfig{
+			URL:              "http://host.com:8080",
+			Subscription:     "duplicatedSubname",
+			SubscriptionType: "shared",
+		}, model.WebhookConfig{
+			URL:              "http://host.com:8080",
+			Subscription:     "duplicatedSubname",
+			SubscriptionType: "shared",
+		},
+	})
+	errNil(t, err)
 }

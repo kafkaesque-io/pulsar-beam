@@ -27,6 +27,12 @@ func Init() {
 	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
 }
 
+// TokenServerResponse is the json object for token server response
+type TokenServerResponse struct {
+	Subject string `json:"subject"`
+	Token   string `json:"token"`
+}
+
 // TokenSubjectHandler issues new token
 func TokenSubjectHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -41,8 +47,16 @@ func TokenSubjectHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			util.ResponseErrorJSON(errors.New("failed to generate token"), w, http.StatusInternalServerError)
 		} else {
+			respJSON, err := json.Marshal(&TokenServerResponse{
+				Subject: subject,
+				Token:   tokenString,
+			})
+			if err != nil {
+				util.ResponseErrorJSON(errors.New("failed to marshal token response json object"), w, http.StatusInternalServerError)
+				return
+			}
+			w.Write(respJSON)
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(tokenString))
 		}
 		return
 	}
