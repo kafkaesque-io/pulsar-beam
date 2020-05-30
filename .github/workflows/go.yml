@@ -87,6 +87,10 @@ jobs:
           ls /usr/local/share/ca-certificate
           sudo update-ca-certificates
           ls /etc/ssl/certs
+      - name: Unit test
+        run: |
+          cd src/unit-test/
+          go test ./...
       - name: Run Test and Code Coverage
         run: |
           echo $TrustStore

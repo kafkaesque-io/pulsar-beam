@@ -25,7 +25,7 @@ var TokenServerRoutes = Routes{
 	Route{
 		"token server",
 		http.MethodGet,
-		"/subject", //TODO: use `subject` to replace the existing token server
+		"/subject/{sub}",
 		TokenSubjectHandler,
 		middleware.AuthVerifyJWT,
 	},
