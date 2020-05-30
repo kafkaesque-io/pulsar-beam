@@ -57,7 +57,6 @@ func TestAssignString(t *testing.T) {
 func TestLoadConfigFile(t *testing.T) {
 
 	os.Setenv("PORT", "9876543")
-	assert(t, "" == os.Getenv("PbDbInterval"), "OS env updated with config file")
 	ReadConfigFile("../" + DefaultConfigFile)
 	config := GetConfig()
 	assert(t, config.PORT == "9876543", "config value overwritteen by env")

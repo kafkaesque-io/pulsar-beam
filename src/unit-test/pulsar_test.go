@@ -21,7 +21,7 @@ func TestClientCreation(t *testing.T) {
 
 	_, err := pulsardriver.GetPulsarClient("pulsar://test url", "token", false)
 	assert(t, err != nil, "create pulsar driver with bogus url")
-	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: Invalid service URL:"), "match invalid service URL at pulsar client creation")
+	assert(t, strings.HasPrefix(err.Error(), "Could not instantiate Pulsar client: "), "match invalid service URL at pulsar client creation")
 
 	_, err = pulsardriver.GetPulsarClient("pulsar://useast1.do.kafkaesque.io:6650", "token", true)
 	errNil(t, err)

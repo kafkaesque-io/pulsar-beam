@@ -106,10 +106,14 @@ func TestTopicHandler(t *testing.T) {
 
 	handler = http.HandlerFunc(UpdateTopicHandler)
 
+	rr = httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	equals(t, http.StatusForbidden, rr.Code)
 
 	// test update the newly created topic
+	topic.TopicFullName = "persistent://picasso/local-useast1-gcp/yet-another-test-topic"
+	reqJSON, err = json.Marshal(topic)
+	errNil(t, err)
 	req, err = http.NewRequest(http.MethodPost, "/v2/topic", bytes.NewReader(reqJSON))
 	errNil(t, err)
 
@@ -119,6 +123,7 @@ func TestTopicHandler(t *testing.T) {
 
 	handler = http.HandlerFunc(UpdateTopicHandler)
 
+	rr = httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	equals(t, http.StatusCreated, rr.Code)
 
@@ -159,11 +164,11 @@ func TestTopicHandler(t *testing.T) {
 	errNil(t, err)
 
 	req.Header.Set("injectedSubs", "picasso")
-	rr2 := httptest.NewRecorder()
+	rr = httptest.NewRecorder()
 	handler = http.HandlerFunc(DeleteTopicHandler)
 
-	handler.ServeHTTP(rr2, req)
-	equals(t, http.StatusNotFound, rr2.Code)
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusNotFound, rr.Code)
 
 	// test with a corrupted payload for deletion
 	reqKeyJSON, err = json.Marshal("broken payload")

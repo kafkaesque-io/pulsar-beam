@@ -264,7 +264,7 @@ func VerifySubject(requiredSubject, tokenSubjects string, evalTenant func(tenant
 	return false
 }
 
-// ExtractEvalTenant is a cumtomized fcuntio to evaluate subject against tenant
+// ExtractEvalTenant is a customized function to evaluate subject against tenant
 func ExtractEvalTenant(requiredSubject, tokenSub string) bool {
 	// expect - in subject unless it is superuser
 	var sub string
