@@ -104,6 +104,7 @@ jobs:
           PULSAR_URI: ${{ secrets.PULSAR_URI }}
           REST_DB_TABLE_TOPIC: ${{ secrets.REST_DB_TABLE_TOPIC }}
       - name: Upload Coverage
+        if: github.repository == 'kafkaesque-io/pulsar-beam'
         uses: codecov/codecov-action@v1.0.0
         with :
           token: ${{ secrets.CODECOV_TOKEN }}
