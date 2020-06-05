@@ -11,9 +11,10 @@
 
 Beam is an http based streaming and queueing system backed up by Apache Pulsar.
 
-1. A message can be sent to Pulsar via an HTTP POST method as a producer.
-2. A message can be pushed to a webhook or Cloud Function for consumption.
-3. A webhook or Cloud Function receives a message, process it and reply another message, in a response body, back to another Pulsar topic via Pulsar Beam.
+- [x] A message can be sent to Pulsar via an HTTP POST method as a producer.
+- [x] A message can be pushed to a webhook or Cloud Function for consumption.
+- [x] A webhook or Cloud Function receives a message, process it and reply another message, in a response body, back to another Pulsar topic via Pulsar Beam.
+- [x] Messages can be streamed via HTTP Sever Sent Event, [SSE](https://www.html5rocks.com/en/tutorials/eventsource/basics/)
 
 Opening an issue and PR are welcomed! Please email `contact@kafkaesque.io` for any inquiry or demo.
 
@@ -23,6 +24,8 @@ Opening an issue and PR are welcomed! Please email `contact@kafkaesque.io` for a
 Immediately, Pulsar can be supported on Windows and any languages with HTTP support.
 
 2. It has a very small footprint with a 15MB docker image size.
+
+3. Supports HTTP SSE streaming
 
 ## Interface
 
@@ -34,10 +37,23 @@ This is the endpoint to `POST` a message to Pulsar.
 ```
 /v1/firehose
 ```
-These HTTP headers are required to map to Pulsar topic.
+These HTTP headers may be required to map to Pulsar topic.
 1. Authorization -> Bearer token as Pulsar token
 2. TopicFn -> a full name of Pulsar topic (with tenant/namespace/topic) is required
 3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
+
+### Endpoint to stream HTTP Server Sent Event
+This is the endpoint to `GET` messages from Pulsar as a consumer subscription
+```
+/v1/sse
+```
+These HTTP headers may be required to map to Pulsar topic.
+1. Authorization -> Bearer token as Pulsar token
+2. TopicFn -> a full name of Pulsar topic (with tenant/namespace/topic) is required
+3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
+4. SubscriptionType -> Supported type strings are `exclusive` as default, `shared`, and `failover`
+5. SubscriptionInitialPosition -> supported type are `latest` as default and `earliest`
+6. SubscriptionName -> the length must be 5 characters or longer. An auto-generated name will be provided in absence. Only the auto-generated subscription will be unsubscribed.
 
 ### Webhook registration
 Webhook registration is done via REST API backed by a database of your choice, such as MongoDB, in momery cache, and Pulsar itself. Yes, you can use a compacted Pulsar topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.

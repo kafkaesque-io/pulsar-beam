@@ -58,6 +58,13 @@ var ReceiverRoutes = Routes{
 		ReceiveHandler,
 		middleware.NoAuth,
 	},
+	Route{
+		"http-sse",
+		"GET",
+		"/v1/sse",
+		SSEHandler,
+		middleware.AuthHeaderRequired,
+	},
 }
 
 // RestRoutes definition

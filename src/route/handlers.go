@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/kafkaesque-io/pulsar-beam/src/broker"
 	"github.com/kafkaesque-io/pulsar-beam/src/db"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
@@ -94,6 +95,59 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	return
+}
+
+// SSEHandler is the HTTP SSE handler
+func SSEHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Recovered in SSEHandler %v", r)
+		} else {
+			fmt.Printf("exit SSEHandler()")
+		}
+	}()
+	// Make sure that the writer supports flushing.
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*") // allow connection from different domain
+
+	// isJSONFormat := len(r.URL.Query().Get("json")) > 0
+	token, topicFN, pulsarURL, subName, subInitPos, subType, err := util.ClientConsumerHeader(util.AllowedPulsarURLs, &r.Header)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+
+	client, consumer, err := broker.GetPulsarClientConsumer(pulsarURL, token, topicFN, subName, subType, subInitPos)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
+		return
+	}
+	if strings.HasPrefix(subName, model.NonResumable) {
+		defer consumer.Unsubscribe()
+	}
+	defer consumer.Close()
+	defer client.Close()
+
+	consumChan := consumer.Chan()
+	for {
+		select {
+		case msg := <-consumChan:
+			// log.Infof("received message %s on topic %s", string(msg.Payload()), topicFN)
+			consumer.Ack(msg)
+			fmt.Fprintf(w, "data: %s\n\n", "test message")
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
+	}
 }
 
 // GetTopicHandler gets the topic details

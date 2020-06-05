@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"net/http"
 	"os"
 
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
@@ -45,12 +44,7 @@ func main() {
 		port := util.AssignString(config.PORT, "8085")
 		certFile := util.GetConfig().CertFile
 		keyFile := util.GetConfig().KeyFile
-		if len(certFile) > 1 && len(keyFile) > 1 {
-			log.Infof("load certFile %s and keyFile %s\n", certFile, keyFile)
-			log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, handler))
-		} else {
-			log.Fatal(http.ListenAndServe(":"+port, handler))
-		}
+		log.Fatal(util.ListenAndServeTLS(":"+port, certFile, keyFile, handler))
 	}
 
 	for util.IsBroker(&mode) {
