@@ -164,7 +164,7 @@ func TestReceiverHeader(t *testing.T) {
 	errNil(t, result)
 	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
 	assert(t, token == "", "test all headers presence")
-	assert(t, len(subName)+len(model.NonResumable) == 36, "default subName is UUID")
+	assert(t, len(subName) == len(model.NonResumable)+36, "default subName is UUID")
 	assert(t, pos == pulsar.SubscriptionPositionLatest, "default SubscriptionPositionLatest")
 	assert(t, subType == pulsar.Exclusive, "default subscription type is exclusive")
 
@@ -214,7 +214,7 @@ func TestClientConsumerHeader(t *testing.T) {
 
 	header.Set("SubscriptionName", "")
 	_, _, _, subName, _, _, result = ClientConsumerHeader(strings.Split("", ","), &header)
-	assert(t, len(subName)+len(model.NonResumable) == 36, "validate the length of subscription name is UUID length")
+	assert(t, len(subName) == len(model.NonResumable)+36, "validate the length of subscription name is UUID length")
 }
 func TestDefaultPulsarURLInReceiverHeader(t *testing.T) {
 	allowedPulsarURLs := strings.Split("pulsar+ssl://kafkaesque.net:6651", ",")
