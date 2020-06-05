@@ -142,7 +142,7 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 		case msg := <-consumChan:
 			// log.Infof("received message %s on topic %s", string(msg.Payload()), topicFN)
 			consumer.Ack(msg)
-			fmt.Fprintf(w, "data: %s\n\n", "test message")
+			fmt.Fprintf(w, "data: %s\n\n", msg.Payload())
 			flusher.Flush()
 		case <-r.Context().Done():
 			return
