@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,6 +75,46 @@ func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, p
 	}
 	return token, topicFN, pulsarURL, nil
 
+}
+
+// ConsumerHeader returns a configuration parameters for Pulsar consumer
+func ConsumerHeader(h *http.Header) (subName string, subInitPos pulsar.SubscriptionInitialPosition, subType pulsar.SubscriptionType, err error) {
+
+	subType, err = model.GetSubscriptionType(h.Get("SubscriptionType"))
+	if err != nil {
+		return "", -1, -1, err
+	}
+	subInitPos, err = model.GetInitialPosition(h.Get("SubscriptionInitialPosition"))
+	if err != nil {
+		return "", -1, -1, err
+	}
+
+	subName = h.Get("SubscriptionName")
+	if len(subName) == 0 {
+		name, err := NewUUID()
+		if err != nil {
+			return "", -1, -1, fmt.Errorf("failed to generate uuid error %v", err)
+		}
+		return model.NonResumable + name, subInitPos, subType, nil
+	} else if len(subName) < 5 {
+		return "", -1, -1, fmt.Errorf("subscription name must be more than 4 characters")
+	}
+	return subName, subInitPos, subType, nil
+}
+
+// ClientConsumerHeader returns configuration parameters required to generate Pulsar Client and Consumer
+func ClientConsumerHeader(allowedClusters []string, h *http.Header) (token, topicFN, pulsarURL, subName string, subInitPos pulsar.SubscriptionInitialPosition, subType pulsar.SubscriptionType, err error) {
+	token, topicFN, pulsarURL, err = ReceiverHeader(allowedClusters, h)
+	if err != nil {
+		return "", "", "", "", -1, -1, err
+	}
+
+	subName, subInitPos, subType, err = ConsumerHeader(h)
+	if err != nil {
+		return "", "", "", "", -1, -1, err
+	}
+
+	return token, topicFN, pulsarURL, subName, subInitPos, subType, nil
 }
 
 // AssignString returns the first non-empty string
