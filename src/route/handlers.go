@@ -142,6 +142,9 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 		case msg := <-consumChan:
 			// log.Infof("received message %s on topic %s", string(msg.Payload()), topicFN)
 			consumer.Ack(msg)
+
+			// ledgerId, entryId, batchId, partitionIndex, reserved, consumerId
+			fmt.Fprintf(w, strings.Replace(fmt.Sprintf("id: %v\n", msg.Message.ID()), "&", "", 1))
 			fmt.Fprintf(w, "data: %s\n\n", msg.Payload())
 			flusher.Flush()
 		case <-r.Context().Done():
