@@ -201,6 +201,23 @@ func TestFireHoseReceiverHandler(t *testing.T) {
 	equals(t, http.StatusUnauthorized, rr.Code)
 }
 
+func TestFireHoseV2ReceiverHandler(t *testing.T) {
+
+	req, err := http.NewRequest(http.MethodPost, "/v2/firehose", bytes.NewReader([]byte{}))
+	errNil(t, err)
+
+	rr := httptest.NewRecorder()
+	req.Header.Set("Authorization", "application/json")
+	req.Header.Set("PulsarUrl", "picasso")
+
+	req = mux.SetURLVars(req, map[string]string{"persistent": "persi", "tenant": "tenant", "namespace": "ns", "topic": "tc"})
+
+	handler := http.HandlerFunc(ReceiveHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusUnprocessableEntity, rr.Code)
+}
+
 func TestSubjectMatch(t *testing.T) {
 	assert(t, !VerifySubjectBasedOnTopic("picasso", "picasso", ExtractEvalTenant), "")
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp", "picasso", ExtractEvalTenant), "")
@@ -317,5 +334,78 @@ func TestTopicModelFunctions(t *testing.T) {
 			SubscriptionType: "shared",
 		},
 	})
+	errNil(t, err)
+}
+
+func TestGetTopicFullNameFromRoute(t *testing.T) {
+	vars := map[string]string{"tenant": "public", "namespace": "default", "topic": "testtopic", "persistent": "np"}
+	topicFn, err := GetTopicFnFromRoute(vars)
+	errNil(t, err)
+	assert(t, topicFn == "non-persistent://public/default/testtopic", "")
+
+	vars = map[string]string{"tenant": "public", "namespace": "default", "topic": "testtopic", "persistent": "persistent"}
+	topicFn, err = GetTopicFnFromRoute(vars)
+	errNil(t, err)
+	assert(t, topicFn == "persistent://public/default/testtopic", "")
+
+	vars = map[string]string{"tenant": "public", "namespace": "default", "topic": "testtopic", "persisten": "np"}
+	topicFn, err = GetTopicFnFromRoute(vars)
+	assert(t, err.Error() == "missing topic parts", "")
+
+	vars = map[string]string{"tenant": "public", "namespace": "default", "topic": "testtopic", "persistent": "nonpartition"}
+	topicFn, err = GetTopicFnFromRoute(vars)
+	assert(t, err.Error() == "supported persistent types are persistent, p, non-persistent, np", "")
+}
+
+func TestConsumerParams(t *testing.T) {
+	params := map[string][]string{"SubscriptionType": []string{"test"}}
+	_, _, _, err := ConsumerParams(params)
+	equals(t, err.Error(), "unsupported subscription type test")
+
+	params = map[string][]string{"SubscriptionType": []string{"shared"}}
+	subName, subPos, subType, err := ConsumerParams(params)
+	equals(t, subPos, pulsar.SubscriptionPositionLatest)
+	equals(t, subType, pulsar.Shared)
+	assert(t, strings.HasPrefix(subName, model.NonResumable), "")
+
+	params = map[string][]string{"SubscriptionInitialPosition": []string{"last"}}
+	_, _, _, err = ConsumerParams(params)
+	equals(t, err.Error(), "invalid subscription initial position last")
+
+	params = map[string][]string{"SubscriptionInitialPosition": []string{"earliest"}}
+	subName, subPos, subType, err = ConsumerParams(params)
+	equals(t, subPos, pulsar.SubscriptionPositionEarliest)
+	equals(t, subType, pulsar.Exclusive)
+	assert(t, strings.HasPrefix(subName, model.NonResumable), "")
+
+	params = map[string][]string{"SubscriptionName": []string{"last"}}
+	_, _, _, err = ConsumerParams(params)
+	equals(t, err.Error(), "subscription name must be more than 4 characters")
+
+	params = map[string][]string{"SubscriptionInitialPosition": []string{"earliest"}, "SubscriptionName": []string{"subname1234"}}
+	subName, subPos, subType, err = ConsumerParams(params)
+	equals(t, subPos, pulsar.SubscriptionPositionEarliest)
+	equals(t, subType, pulsar.Exclusive)
+	equals(t, subName, "subname1234")
+}
+
+func TestConsumerConfigFromHTTPParts(t *testing.T) {
+	params := map[string][]string{"SubscriptionInitialPosition": []string{"earliest"}, "SubscriptionName": []string{"subname1234"}}
+	vars := map[string]string{"tenant": "public", "namespace": "default", "topic": "testtopic", "persistent": "nonpartition"}
+	header := http.Header{}
+	// header.Set("Authorization", "Bearer erfagagagag")
+	header.Set("PulsarUrl", "pulsar://mydomain.net:6650")
+	_, _, _, _, _, _, err := ConsumerConfigFromHTTPParts(strings.Split("pulsar://mydomain.net:6651", ","), &header, vars, params)
+	equals(t, err.Error(), "pulsar cluster pulsar://mydomain.net:6650 is not allowed")
+	_, _, _, _, _, _, err = ConsumerConfigFromHTTPParts(strings.Split("", ","), &header, vars, params)
+	equals(t, err.Error(), "supported persistent types are persistent, p, non-persistent, np")
+
+	vars = map[string]string{"tenant": "public", "namespace": "default", "topic": "testtopic", "persistent": "p"}
+	params = map[string][]string{"SubscriptionInitialPosition": []string{"earlies"}, "SubscriptionName": []string{"subname1234"}}
+	_, _, _, _, _, _, err = ConsumerConfigFromHTTPParts(strings.Split("", ","), &header, vars, params)
+	equals(t, err.Error(), "invalid subscription initial position earlies")
+
+	params = map[string][]string{"SubscriptionInitialPosition": []string{"earliest"}, "SubscriptionName": []string{"subname1234"}}
+	_, _, _, _, _, _, err = ConsumerConfigFromHTTPParts(strings.Split("", ","), &header, vars, params)
 	errNil(t, err)
 }

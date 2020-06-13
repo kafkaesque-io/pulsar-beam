@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
 	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/route"
@@ -146,86 +145,27 @@ func TestMainControlMode(t *testing.T) {
 func TestReceiverHeader(t *testing.T) {
 	header := http.Header{}
 	// header.Set("Authorization", "Bearer erfagagagag")
-	header.Set("PulsarUrl", "pulsar://mydomain.net:6650")
 	_, _, _, result := ReceiverHeader(strings.Split("", ","), &header)
-	assert(t, result != nil, "expected error because of missing TopicFn")
+	equals(t, result.Error(), "missing configured Pulsar URL")
 
-	_, _, _, _, _, _, result = ClientConsumerHeader(strings.Split("", ","), &header)
-	assert(t, result != nil, "expected error because of missing TopicFn")
-
-	header.Set("TopicFn", "http://target.net/route")
-	var token, webhook string
-	token, webhook, _, result = ReceiverHeader(strings.Split("", ","), &header)
+	header.Set("PulsarUrl", "http://target.net/route")
+	var token string
+	token, _, _, result = ReceiverHeader(strings.Split("", ","), &header)
 	errNil(t, result)
-	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
 	assert(t, token == "", "test all headers presence")
-
-	token, webhook, _, subName, pos, subType, result := ClientConsumerHeader(strings.Split("", ","), &header)
-	errNil(t, result)
-	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
-	assert(t, token == "", "test all headers presence")
-	assert(t, len(subName) == len(model.NonResumable)+36, "default subName is UUID")
-	assert(t, pos == pulsar.SubscriptionPositionLatest, "default SubscriptionPositionLatest")
-	assert(t, subType == pulsar.Exclusive, "default subscription type is exclusive")
-
-	header.Set("Authorization", "Bearer erfagagagag")
-
-	allowedPulsarURLs := strings.Split("pulsar://mydomain.net:6650", ",")
-	_, webhook, _, result = ReceiverHeader(allowedPulsarURLs, &header)
-	errNil(t, result)
-	assert(t, webhook == header.Get("TopicFn"), "pulsarURL in header matches allowed pulsar Cluster URL")
-
-	allowedPulsarURLs = strings.Split("pulsar://kafkaesque.net:6650,", ",")
-	_, _, _, result = ReceiverHeader(allowedPulsarURLs, &header)
-	assert(t, result != nil, "pulsarURL in header does not match allowed pulsar Cluster URL")
-
-	allowedPulsarURLs = strings.Split("pulsar://kafkaesque.net:6650, pulsar://mydomain.net:6650", ",")
-	_, webhook, _, result = ReceiverHeader(allowedPulsarURLs, &header)
-	errNil(t, result)
-	assert(t, webhook == header.Get("TopicFn"), "pulsarURL in header matches one of allowed pulsar Cluster URLs")
 }
 
-func TestClientConsumerHeader(t *testing.T) {
-	header := http.Header{}
-	header.Set("PulsarUrl", "pulsar://mydomain.net:6650")
-	header.Set("TopicFn", "persistent://target.net/route")
-	header.Set("SubscriptionName", "12345")
-	header.Set("SubscriptionType", "shared")
-	header.Set("SubscriptionInitialPosition", "earliest")
-	_, _, _, subName, pos, subType, result := ClientConsumerHeader(strings.Split("", ","), &header)
-	errNil(t, result)
-	assert(t, subName == "12345", "match subscription name")
-	assert(t, pos == pulsar.SubscriptionPositionEarliest, "match subscription initial position")
-	assert(t, subType == pulsar.Shared, "match subscription type")
-
-	header.Set("SubscriptionType", "execlusive")
-	_, _, _, _, _, _, result = ClientConsumerHeader(strings.Split("", ","), &header)
-	assert(t, strings.HasPrefix(result.Error(), "unsupported subscription type"), "unsupported subscription type")
-
-	header.Set("SubscriptionType", "exclusive")
-	header.Set("SubscriptionInitialPosition", "lastest")
-	_, _, _, _, _, _, result = ClientConsumerHeader(strings.Split("", ","), &header)
-	assert(t, strings.HasPrefix(result.Error(), "invalid subscription initial position"), "invalid subscription initial position")
-
-	header.Set("SubscriptionInitialPosition", "latest")
-	header.Set("SubscriptionName", "1234")
-	_, _, _, _, _, _, result = ClientConsumerHeader(strings.Split("", ","), &header)
-	assert(t, strings.HasPrefix(result.Error(), "subscription name must be more than 4 characters"), "subscription name must be more than 4 characters")
-
-	header.Set("SubscriptionName", "")
-	_, _, _, subName, _, _, result = ClientConsumerHeader(strings.Split("", ","), &header)
-	assert(t, len(subName) == len(model.NonResumable)+36, "validate the length of subscription name is UUID length")
-}
 func TestDefaultPulsarURLInReceiverHeader(t *testing.T) {
 	allowedPulsarURLs := strings.Split("pulsar+ssl://kafkaesque.net:6651", ",")
 	header := http.Header{}
 	header.Set("Authorization", "Bearer erfagagagag")
-	_, _, _, result := ReceiverHeader(allowedPulsarURLs, &header)
-	assert(t, result != nil, "expected error because of missing TopicFn")
+	_, _, pulsarURL, result := ReceiverHeader(allowedPulsarURLs, &header)
+	errNil(t, result)
+	equals(t, pulsarURL, "pulsar+ssl://kafkaesque.net:6651")
 
 	header.Set("TopicFn", "http://target.net/route")
 	var webhook string
-	_, webhook, pulsarURL, result := ReceiverHeader(allowedPulsarURLs, &header)
+	_, webhook, pulsarURL, result = ReceiverHeader(allowedPulsarURLs, &header)
 	errNil(t, result)
 	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
 	assert(t, pulsarURL == "pulsar+ssl://kafkaesque.net:6651", "test all headers presence")

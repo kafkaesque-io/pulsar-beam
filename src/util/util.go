@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -69,52 +68,22 @@ func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, p
 		} else if !StrContains(allowedClusters, pulsarURL) {
 			return "", "", "", fmt.Errorf("pulsar cluster %s is not allowed", pulsarURL)
 		}
+	} else if pulsarURL == "" {
+		return "", "", "", fmt.Errorf("missing configured Pulsar URL")
 	}
-	if topicFN == "" || pulsarURL == "" {
-		return "", "", "", fmt.Errorf("missing required token or topic or pulsarURL")
-	}
+	fmt.Printf("pulsarURL is %s\n", pulsarURL)
 	return token, topicFN, pulsarURL, nil
-
 }
 
-// ConsumerHeader returns a configuration parameters for Pulsar consumer
-func ConsumerHeader(h *http.Header) (subName string, subInitPos pulsar.SubscriptionInitialPosition, subType pulsar.SubscriptionType, err error) {
-
-	subType, err = model.GetSubscriptionType(h.Get("SubscriptionType"))
-	if err != nil {
-		return "", -1, -1, err
+// BuildTopicFn builds topic fullname.
+func BuildTopicFn(persistent, tenant, namespace, topic string) (string, error) {
+	if persistent == "persistent" || persistent == "p" {
+		return "persistent://" + tenant + "/" + namespace + "/" + topic, nil
+	} else if persistent == "non-persistent" || persistent == "np" {
+		return "non-persistent://" + tenant + "/" + namespace + "/" + topic, nil
+	} else {
+		return "", fmt.Errorf("supported persistent types are persistent, p, non-persistent, np")
 	}
-	subInitPos, err = model.GetInitialPosition(h.Get("SubscriptionInitialPosition"))
-	if err != nil {
-		return "", -1, -1, err
-	}
-
-	subName = h.Get("SubscriptionName")
-	if len(subName) == 0 {
-		name, err := NewUUID()
-		if err != nil {
-			return "", -1, -1, fmt.Errorf("failed to generate uuid error %v", err)
-		}
-		return model.NonResumable + name, subInitPos, subType, nil
-	} else if len(subName) < 5 {
-		return "", -1, -1, fmt.Errorf("subscription name must be more than 4 characters")
-	}
-	return subName, subInitPos, subType, nil
-}
-
-// ClientConsumerHeader returns configuration parameters required to generate Pulsar Client and Consumer
-func ClientConsumerHeader(allowedClusters []string, h *http.Header) (token, topicFN, pulsarURL, subName string, subInitPos pulsar.SubscriptionInitialPosition, subType pulsar.SubscriptionType, err error) {
-	token, topicFN, pulsarURL, err = ReceiverHeader(allowedClusters, h)
-	if err != nil {
-		return "", "", "", "", -1, -1, err
-	}
-
-	subName, subInitPos, subType, err = ConsumerHeader(h)
-	if err != nil {
-		return "", "", "", "", -1, -1, err
-	}
-
-	return token, topicFN, pulsarURL, subName, subInitPos, subType, nil
 }
 
 // AssignString returns the first non-empty string
@@ -164,4 +133,12 @@ func StringToBool(str string) bool {
 	}
 
 	return false
+}
+
+// QueryParamString get URL query parameter with a default value
+func QueryParamString(params url.Values, name, defaultValue string) string {
+	if str, ok := params[name]; ok {
+		return str[0]
+	}
+	return defaultValue
 }
