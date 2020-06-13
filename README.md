@@ -35,25 +35,29 @@ REST API and endpoint swagger document is published at [this link](https://kafka
 This is the endpoint to `POST` a message to Pulsar. 
 
 ```
-/v1/firehose
+/v2/firehose/{persistent}/{tenant}/{namespace}/{topic}
 ```
+Valid values of {persistent} are `p`, `persistent`, `np`, `nonpersistent`
+
 These HTTP headers may be required to map to Pulsar topic.
 1. Authorization -> Bearer token as Pulsar token
-2. TopicFn -> a full name of Pulsar topic (with tenant/namespace/topic) is required
-3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
+2. PulsarUrl -> *optional* a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
 
 ### Endpoint to stream HTTP Server Sent Event
 This is the endpoint to `GET` messages from Pulsar as a consumer subscription
 ```
-/v1/sse
+/v2/sse/{persistent}/{tenant}/{namespace}/{topic}
 ```
+Valid values of {persistent} are `p`, `persistent`, `np`, `nonpersistent`
+
 These HTTP headers may be required to map to Pulsar topic.
 1. Authorization -> Bearer token as Pulsar token
-2. TopicFn -> a full name of Pulsar topic (with tenant/namespace/topic) is required
-3. PulsarUrl -> a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
-4. SubscriptionType -> Supported type strings are `exclusive` as default, `shared`, and `failover`
-5. SubscriptionInitialPosition -> supported type are `latest` as default and `earliest`
-6. SubscriptionName -> the length must be 5 characters or longer. An auto-generated name will be provided in absence. Only the auto-generated subscription will be unsubscribed.
+2. PulsarUrl -> *optional* a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
+
+Query parameters
+1. SubscriptionType -> Supported type strings are `exclusive` as default, `shared`, and `failover`
+2. SubscriptionInitialPosition -> supported type are `latest` as default and `earliest`
+3. SubscriptionName -> the length must be 5 characters or longer. An auto-generated name will be provided in absence. Only the auto-generated subscription will be unsubscribed.
 
 ### Webhook registration
 Webhook registration is done via REST API backed by a database of your choice, such as MongoDB, in momery cache, and Pulsar itself. Yes, you can use a compacted Pulsar topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.

@@ -59,11 +59,18 @@ var ReceiverRoutes = Routes{
 		middleware.NoAuth,
 	},
 	Route{
+		"Receive",
+		"POST",
+		"/v2/firehose/{persistent}/{tenant}/{namespace}/{topic}",
+		ReceiveHandler,
+		middleware.AuthVerifyJWT,
+	},
+	Route{
 		"http-sse",
 		"GET",
-		"/v1/sse",
+		"/v2/sse/{persistent}/{tenant}/{namespace}/{topic}",
 		SSEHandler,
-		middleware.AuthHeaderRequired,
+		middleware.AuthVerifyJWT,
 	},
 }
 

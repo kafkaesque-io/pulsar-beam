@@ -7,8 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gorilla/mux"
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
 	"github.com/kafkaesque-io/pulsar-beam/src/db"
@@ -79,12 +81,19 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 		return
 	}
-
-	token, topicFN, pulsarURL, err2 := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
-	if err2 != nil {
-		util.ResponseErrorJSON(err2, w, http.StatusUnauthorized)
+	token, topic, pulsarURL, err := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnauthorized)
 		return
 	}
+
+	topicFN, err2 := GetTopicFnFromRoute(mux.Vars(r))
+	if topic == "" && err2 != nil {
+		// only read topic from routes
+		util.ResponseErrorJSON(err2, w, http.StatusUnprocessableEntity)
+		return
+	}
+	topicFN = util.AssignString(topic, topicFN) // header topicFn overwrites topic specified in the routes
 	log.Infof("topicFN %s pulsarURL %s", topicFN, pulsarURL)
 
 	pulsarAsync := r.URL.Query().Get("mode") == "async"
@@ -106,6 +115,15 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("exit SSEHandler()")
 		}
 	}()
+
+	u, _ := url.Parse(r.URL.String())
+	params := u.Query()
+	token, topicFN, pulsarURL, subName, subInitPos, subType, err := ConsumerConfigFromHTTPParts(util.AllowedPulsarURLs, &r.Header, mux.Vars(r), params)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+
 	// Make sure that the writer supports flushing.
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -117,13 +135,6 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*") // allow connection from different domain
-
-	// isJSONFormat := len(r.URL.Query().Get("json")) > 0
-	token, topicFN, pulsarURL, subName, subInitPos, subType, err := util.ClientConsumerHeader(util.AllowedPulsarURLs, &r.Header)
-	if err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
-		return
-	}
 
 	client, consumer, err := broker.GetPulsarClientConsumer(pulsarURL, token, topicFN, subName, subType, subInitPos)
 	if err != nil {
@@ -336,4 +347,64 @@ func ExtractEvalTenant(requiredSubject, tokenSub string) bool {
 		return true
 	}
 	return false
+}
+
+// GetTopicFnFromRoute builds a valida topic fullname from the http route
+func GetTopicFnFromRoute(vars map[string]string) (string, error) {
+	tenant, ok := vars["tenant"]
+	namespace, ok2 := vars["namespace"]
+	topic, ok3 := vars["topic"]
+	persistent, ok4 := vars["persistent"]
+	if !(ok && ok2 && ok3 && ok4) {
+		return "", fmt.Errorf("missing topic parts")
+	}
+	topicFn, err := util.BuildTopicFn(persistent, tenant, namespace, topic)
+	if err != nil {
+		return "", err
+	}
+	return topicFn, nil
+}
+
+// ConsumerParams returns a configuration parameters for Pulsar consumer
+func ConsumerParams(params url.Values) (subName string, subInitPos pulsar.SubscriptionInitialPosition, subType pulsar.SubscriptionType, err error) {
+	subType, err = model.GetSubscriptionType(util.QueryParamString(params, "SubscriptionType", "exclusive"))
+	if err != nil {
+		return "", -1, -1, err
+	}
+	subInitPos, err = model.GetInitialPosition(util.QueryParamString(params, "SubscriptionInitialPosition", "latest"))
+	if err != nil {
+		return "", -1, -1, err
+	}
+
+	subName = util.QueryParamString(params, "SubscriptionName", "")
+	if len(subName) == 0 {
+		name, err := util.NewUUID()
+		if err != nil {
+			return "", -1, -1, fmt.Errorf("failed to generate uuid error %v", err)
+		}
+		return model.NonResumable + name, subInitPos, subType, nil
+	} else if len(subName) < 5 {
+		return "", -1, -1, fmt.Errorf("subscription name must be more than 4 characters")
+	}
+	return subName, subInitPos, subType, nil
+}
+
+// ConsumerConfigFromHTTPParts returns configuration parameters required to generate Pulsar Client and Consumer
+func ConsumerConfigFromHTTPParts(allowedClusters []string, h *http.Header, vars map[string]string, params url.Values) (token, topicFN, pulsarURL, subName string, subInitPos pulsar.SubscriptionInitialPosition, subType pulsar.SubscriptionType, err error) {
+	token, _, pulsarURL, err = util.ReceiverHeader(allowedClusters, h)
+	if err != nil {
+		return "", "", "", "", -1, -1, err
+	}
+
+	topicFN, err = GetTopicFnFromRoute(vars)
+	if err != nil {
+		return "", "", "", "", -1, -1, err
+	}
+
+	subName, subInitPos, subType, err = ConsumerParams(params)
+	if err != nil {
+		return "", "", "", "", -1, -1, err
+	}
+
+	return token, topicFN, pulsarURL, subName, subInitPos, subType, nil
 }
