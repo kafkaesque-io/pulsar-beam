@@ -159,12 +159,13 @@ func TestDefaultPulsarURLInReceiverHeader(t *testing.T) {
 	allowedPulsarURLs := strings.Split("pulsar+ssl://kafkaesque.net:6651", ",")
 	header := http.Header{}
 	header.Set("Authorization", "Bearer erfagagagag")
-	_, _, _, result := ReceiverHeader(allowedPulsarURLs, &header)
-	assert(t, result != nil, "expected error because of missing TopicFn")
+	_, _, pulsarURL, result := ReceiverHeader(allowedPulsarURLs, &header)
+	errNil(t, result)
+	equals(t, pulsarURL, "pulsar+ssl://kafkaesque.net:6651")
 
 	header.Set("TopicFn", "http://target.net/route")
 	var webhook string
-	_, webhook, pulsarURL, result := ReceiverHeader(allowedPulsarURLs, &header)
+	_, webhook, pulsarURL, result = ReceiverHeader(allowedPulsarURLs, &header)
 	errNil(t, result)
 	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
 	assert(t, pulsarURL == "pulsar+ssl://kafkaesque.net:6651", "test all headers presence")
