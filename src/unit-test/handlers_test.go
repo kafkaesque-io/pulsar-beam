@@ -201,6 +201,23 @@ func TestFireHoseReceiverHandler(t *testing.T) {
 	equals(t, http.StatusUnauthorized, rr.Code)
 }
 
+func TestFireHoseV2ReceiverHandler(t *testing.T) {
+
+	req, err := http.NewRequest(http.MethodPost, "/v2/firehose", bytes.NewReader([]byte{}))
+	errNil(t, err)
+
+	rr := httptest.NewRecorder()
+	req.Header.Set("Authorization", "application/json")
+	req.Header.Set("PulsarUrl", "picasso")
+
+	req = mux.SetURLVars(req, map[string]string{"persistent": "persi", "tenant": "tenant", "namespace": "ns", "topic": "tc"})
+
+	handler := http.HandlerFunc(ReceiveHandler)
+
+	handler.ServeHTTP(rr, req)
+	equals(t, http.StatusUnprocessableEntity, rr.Code)
+}
+
 func TestSubjectMatch(t *testing.T) {
 	assert(t, !VerifySubjectBasedOnTopic("picasso", "picasso", ExtractEvalTenant), "")
 	assert(t, VerifySubjectBasedOnTopic("persistent://picasso/local-useast1-gcp", "picasso", ExtractEvalTenant), "")

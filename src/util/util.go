@@ -68,7 +68,10 @@ func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, p
 		} else if !StrContains(allowedClusters, pulsarURL) {
 			return "", "", "", fmt.Errorf("pulsar cluster %s is not allowed", pulsarURL)
 		}
+	} else if pulsarURL == "" {
+		return "", "", "", fmt.Errorf("missing configured Pulsar URL")
 	}
+	fmt.Printf("pulsarURL is %s\n", pulsarURL)
 	return token, topicFN, pulsarURL, nil
 }
 

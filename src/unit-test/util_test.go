@@ -145,15 +145,13 @@ func TestMainControlMode(t *testing.T) {
 func TestReceiverHeader(t *testing.T) {
 	header := http.Header{}
 	// header.Set("Authorization", "Bearer erfagagagag")
-	header.Set("PulsarUrl", "pulsar://mydomain.net:6650")
 	_, _, _, result := ReceiverHeader(strings.Split("", ","), &header)
-	assert(t, result != nil, "expected error because of missing TopicFn")
+	equals(t, result.Error(), "missing configured Pulsar URL")
 
-	header.Set("TopicFn", "http://target.net/route")
-	var token, webhook string
-	token, webhook, _, result = ReceiverHeader(strings.Split("", ","), &header)
+	header.Set("PulsarUrl", "http://target.net/route")
+	var token string
+	token, _, _, result = ReceiverHeader(strings.Split("", ","), &header)
 	errNil(t, result)
-	assert(t, webhook == header.Get("TopicFn"), "test all headers presence")
 	assert(t, token == "", "test all headers presence")
 }
 
