@@ -5,15 +5,73 @@ import (
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
 )
 
-// swagger:route POST /v1/firehose Event-Receiver idOfFirehoseEndpoint
+// swagger:operation POST /v2/firehose/{persistent}/{tenant}/{namespace}/{topic} Send-Messages idOfFirehoseEndpoint
+//
 // The endpoint receives a message in HTTP body that will be sent to Pulsar.
 //
+// ---
 // headers:
 // responses:
-//   200:
-//   401: errorResponse
-//   500: errorResponse
-//   503: errorResponse
+//   '200':
+//     description: successfully sent messages
+//   '401':
+//     description: authentication failure
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '422':
+//     description: invalid request parameters
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '500':
+//     description: failed to read the http body
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '503':
+//     description: failed to send messages to Pulsar
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+
+// swagger:operation GET /v2/sse/{persistent}/{tenant}/{namespace}/{topic} SSE-Event-Streaming idOfHTTPSeverSentEvent
+// The endpoint receives a message in HTTP body that will be sent to Pulsar.
+//
+// ---
+// produces:
+// - text/event-stream
+// headers:
+// - name: PulsarURL
+//   description: Specify a pulsar cluster. This can be ignored by the server side to enforce connecting to a local Pulsar cluster.
+//   required: false
+// parameters:
+// - name: SubscriptionInitialPosition
+//   in: query
+//   description: specify subscription initial position in either latest or earliest, the default is latest
+//   type: string
+//   required: false
+// - name: SubscriptionType
+//   in: query
+//   description: specify subscription type in exclusive, shared, keyshared, or failover, the default is exclusive
+//   type: string
+//   required: false
+// - name: SubscriptionName
+//   in: query
+//   description: subscription name in minimum 5 charaters, a random subscription will be generated if not specified
+//   type: string
+//   required: false
+// responses:
+//   '200':
+//     description: successfully subscribed to Pulsar
+//   '401':
+//     description: authentication failure
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '422':
+//     description: invalid request parameters
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '500':
+//     description: failed to subscribe or receive messages from Pulsar
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
 
 // swagger:route GET /v2/topic Get-Topic idOfGetTopic
 // Get a topic configuration based on the topic name.
@@ -70,6 +128,9 @@ import (
 //   422: errorResponse
 //   500: errorResponse
 
+type sseQueryParams struct {
+}
+
 // swagger:parameters idOfGetTopic
 type topicGetParams struct {
 	// in:body
@@ -106,5 +167,11 @@ type topicUpdateParams struct {
 // swagger:response errorResponse
 type errorResponse struct {
 	// in:body
+	Body util.ResponseErr
+}
+
+// swagger:model errorResponse
+type errorResponse2 struct {
+	// required: true
 	Body util.ResponseErr
 }
