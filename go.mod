@@ -8,16 +8,19 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/gops v0.3.10
 	github.com/gorilla/mux v1.7.3
 	github.com/hashicorp/go-retryablehttp v0.6.4
 	github.com/prometheus/client_golang v1.4.1
 	github.com/rs/cors v1.7.0
+	github.com/shirou/gopsutil v2.20.5+incompatible // indirect
 	github.com/sirupsen/logrus v1.5.0
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.2.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
+	golang.org/x/sys v0.0.0-20200622214017-ed371f2e16b4 // indirect
 )
 
 // temporary pulsar client until https://github.com/apache/pulsar-client-go/pull/238 can be merged

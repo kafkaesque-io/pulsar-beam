@@ -107,6 +107,8 @@ This is an example of a default configurations using in-memory database. Customi
 $ sudo docker run -d -it -v /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-bundle.crt -p 8085:8085 --name=pbeam-server pulsar-beam
 ```
 
+`gops` is built in the docker image for troubleshooting purpose.
+
 ### Pulsar Kubernetes cluster deployment
 
 Pulsar Beam can be deployed within the same cluster as Pulsar. This [helm chart](https://github.com/kafkaesque-io/pulsar-helm-chart/blob/master/helm-chart-sources/pulsar/templates/beamwh-deployment.yaml) deploys a webhook broker in its own pod. The rest of HTTP receiver endpoint and REST API are deployed as a container within the [Pulsar proxy pod](https://github.com/kafkaesque-io/pulsar-helm-chart), that offers scalability with multiple replicas.

@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"os"
+	"runtime"
 
+	"github.com/google/gops/agent"
 	"github.com/kafkaesque-io/pulsar-beam/src/broker"
 	"github.com/kafkaesque-io/pulsar-beam/src/route"
 	"github.com/kafkaesque-io/pulsar-beam/src/util"
@@ -16,6 +18,15 @@ import (
 var mode = util.AssignString(os.Getenv("ProcessMode"), *flag.String("mode", "hybrid", "server running mode"))
 
 func main() {
+	// runtime.GOMAXPROCS does not the container's CPU quota in Kubernetes
+	// therefore, it requires to be set explicitly
+	runtime.GOMAXPROCS(util.GetEnvInt("GOMAXPROCS", 1))
+
+	// gops debug instrument
+	if err := agent.Listen(agent.Options{}); err != nil {
+		log.Panicf("gops instrument error %v", err)
+	}
+
 	exit := make(chan bool) // future use to exit the main program if in broker only mode
 	util.Init()
 
