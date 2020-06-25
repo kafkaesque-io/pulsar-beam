@@ -42,9 +42,10 @@ func watchFile(filePath string, updated chan *updatedChann) error {
 		return err
 	}
 
+	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
-		case <-time.Tick(1 * time.Second):
+		case <-ticker.C:
 			stat, err := os.Stat(filePath)
 			if err == nil {
 				if stat.Size() != initialStat.Size() || stat.ModTime() != initialStat.ModTime() {
