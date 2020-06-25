@@ -1,7 +1,7 @@
 ---
 PORT: 8085
 CLUSTER: localhost
-PbDbType: mongo
+PbDbType: inmemory
 PulsarPublicKey: ./unit-test/example_public_key.pub
 PulsarPrivateKey: ./unit-test/example_private_key
 PbDbInterval: 10s

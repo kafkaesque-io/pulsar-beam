@@ -57,9 +57,10 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 
 // eventLoop name is a disguise. I should convert the lock/unlock to an event loop
 func (c *Cache) eventLoop() {
+	ticker := time.NewTicker(c.opt.CleanInterval)
 	for {
 		select {
-		case <-time.Tick(c.opt.CleanInterval):
+		case <-ticker.C:
 			// RLock is faster than Lock, performant improve to get a slice of keys first
 			c.mutex.RLock()
 			keys := make([]string, 0, len(c.items))

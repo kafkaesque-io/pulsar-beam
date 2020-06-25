@@ -71,9 +71,10 @@ func Init() {
 
 	go func() {
 		run()
+		ticker := time.NewTicker(duration)
 		for {
 			select {
-			case <-time.Tick(duration):
+			case <-ticker.C:
 				run()
 			}
 		}
@@ -195,11 +196,13 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 		if err != nil {
 			log.Infof("error from consumer loop receive: %v\n", err)
 			retry++
+			ticker := time.NewTicker(time.Duration(2*retry) * time.Second)
+			defer ticker.Stop()
 			select {
 			case <-terminate:
 				log.Infof("subscription %s received signal to exit consumer loop", subscriptionKey)
 				return nil
-			case <-time.Tick(time.Duration(2*retry) * time.Second):
+			case <-ticker.C:
 				//reconnect after error
 				c, err = pulsardriver.GetPulsarConsumer(url, token, topic, whCfg.Subscription, whCfg.InitialPosition, whCfg.SubscriptionType, subscriptionKey)
 				if err != nil {
