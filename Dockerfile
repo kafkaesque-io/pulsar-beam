@@ -4,9 +4,13 @@
 FROM golang:alpine AS builder
 
 # Add Maintainer Info
-LABEL maintainer="kafkaesque.io"
+LABEL maintainer="kesque"
 
 RUN apk --no-cache add build-base git
+
+# Build Delve
+RUN go get github.com/google/gops
+
 WORKDIR /root/
 ADD . /root
 RUN cd /root/src && go build -o pulsar-beam
@@ -22,6 +26,9 @@ RUN mkdir /root/config/
 COPY --from=builder /root/src/pulsar-beam /root/bin
 COPY --from=builder /root/config/pulsar_beam_inmemory_db.yml /root/config/pulsar_beam.yml
 COPY --from=builder /root/src/unit-test/example_p* /root/config/
+
+# Copy debug tools
+COPY --from=builder /go/bin/gops /root/bin
 
 # Command to run the executable
 ENTRYPOINT ["./pulsar-beam"]
