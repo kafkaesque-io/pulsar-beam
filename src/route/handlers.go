@@ -59,7 +59,6 @@ func TokenSubjectHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			w.Write(respJSON)
-			w.WriteHeader(http.StatusOK)
 		}
 		return
 	}
@@ -106,15 +105,49 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// recoverHandler a function recovers from panic
+func recoverHandler(r *http.Request) {
+	if r := recover(); r != nil {
+		fmt.Printf("Recovered in http handler crash %v", r)
+	} else {
+		fmt.Printf("exit http handler")
+	}
+}
+
+// PollHandler polls messages from a Pulsar topic.
+func PollHandler(w http.ResponseWriter, r *http.Request) {
+	defer recoverHandler(r)
+
+	u, _ := url.Parse(r.URL.String())
+	params := u.Query()
+	token, topicFN, pulsarURL, subName, _, subType, err := ConsumerConfigFromHTTPParts(util.AllowedPulsarURLs, &r.Header, mux.Vars(r), params)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	size := util.QueryParamInt(params, "batch", 10)
+	perMessageTimeoutMs := util.QueryParamInt(params, "perMessageTimeoutMs", 300)
+
+	// subscription initial position is always set to earliest since this is short poll
+	msgs, err := broker.PollBatchMessages(pulsarURL, token, topicFN, subName, subType, size, perMessageTimeoutMs)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+
+	data, err := json.Marshal(msgs)
+	if err != nil {
+		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		return
+	}
+	w.Write(data)
+}
+
 // SSEHandler is the HTTP SSE handler
 func SSEHandler(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Recovered in SSEHandler %v", r)
-		} else {
-			fmt.Printf("exit SSEHandler()")
-		}
-	}()
+	defer recoverHandler(r)
 
 	u, _ := url.Parse(r.URL.String())
 	params := u.Query()
@@ -189,7 +222,6 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 	} else {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusOK)
 		w.Write(resJSON)
 	}
 
@@ -199,6 +231,7 @@ func GetTopicHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateTopicHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	var doc model.TopicConfig
 	err := decoder.Decode(&doc)
@@ -270,7 +303,6 @@ func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusOK)
 		w.Write(resJSON)
 	}
 }

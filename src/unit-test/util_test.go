@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -392,5 +393,50 @@ func TestStringToBoo(t *testing.T) {
 	assert(t, !StringToBool("notok"), "string notok yields boolean false")
 	assert(t, !StringToBool("disable"), "string disable yields boolean false")
 	assert(t, !StringToBool("adsfasdf"), "string any string yields boolean false")
+}
 
+func TestTokenizeTopicFullName(t *testing.T) {
+	isPersistent, tenant, ns, topic, err := TokenizeTopicFullName("persistent://public/default/test-topic")
+	errNil(t, err)
+	equals(t, isPersistent, true)
+	equals(t, tenant, "public")
+	equals(t, ns, "default")
+	equals(t, topic, "test-topic")
+
+	isPersistent, tenant, ns, topic, err = TokenizeTopicFullName("non-persistent://public/default/test-topic")
+	errNil(t, err)
+	equals(t, isPersistent, false)
+	equals(t, tenant, "public")
+	equals(t, ns, "default")
+	equals(t, topic, "test-topic")
+
+	_, _, _, _, err = TokenizeTopicFullName("persitent://public/default/test-topic")
+	assertErr(t, "invalid persistent or non-persistent part", err)
+
+	isPersistent, tenant, ns, topic, err = TokenizeTopicFullName("non-persistent://public/default")
+	errNil(t, err)
+	equals(t, isPersistent, false)
+	equals(t, tenant, "public")
+	equals(t, ns, "default")
+	equals(t, topic, "")
+
+	_, _, _, _, err = TokenizeTopicFullName("non-persistent://public")
+	assertErr(t, "missing tenant, namespace, or topic name", err)
+
+	_, _, _, _, err = TokenizeTopicFullName("non-persistent://public/default/to2/to3")
+	assertErr(t, "missing tenant, namespace, or topic name", err)
+}
+
+func TestHTTPParams(t *testing.T) {
+	params := url.Values{}
+	params.Set("var1", "testme")
+	params.Set("var2", "48")
+	params.Set("var3", "7")
+	equals(t, QueryParamInt(params, "var1", 5), 5)
+	equals(t, QueryParamInt(params, "var2", 5), 48)
+	equals(t, QueryParamInt(params, "var22", 5), 5)
+
+	equals(t, QueryParamString(params, "var1", "48"), "testme")
+	equals(t, QueryParamString(params, "var2", "test"), "48")
+	equals(t, QueryParamString(params, "var22", "another"), "another")
 }

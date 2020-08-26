@@ -15,6 +15,7 @@ Beam is an http based streaming and queueing system backed up by Apache Pulsar.
 - [x] A message can be pushed to a webhook or Cloud Function for consumption.
 - [x] A webhook or Cloud Function receives a message, process it and reply another message, in a response body, back to another Pulsar topic via Pulsar Beam.
 - [x] Messages can be streamed via HTTP Sever Sent Event, [SSE](https://www.html5rocks.com/en/tutorials/eventsource/basics/)
+- [x] Support HTTP polling of batch messages
 
 Opening an issue and PR are welcomed! Please email `contact@kafkaesque.io` for any inquiry or demo.
 
@@ -58,6 +59,21 @@ Query parameters
 1. SubscriptionType -> Supported type strings are `exclusive` as default, `shared`, and `failover`
 2. SubscriptionInitialPosition -> supported type are `latest` as default and `earliest`
 3. SubscriptionName -> the length must be 5 characters or longer. An auto-generated name will be provided in absence. Only the auto-generated subscription will be unsubscribed.
+
+### Endpoint to poll batch messages
+Polls a batch of messages always from the earliest subscription position from a topic.
+```
+/v2/poll/{persistent}/{tenant}/{namespace}/{topic}
+```
+These HTTP headers may be required to map to Pulsar topic.
+1. Authorization -> Bearer token as Pulsar token
+2. PulsarUrl -> *optional* a fully qualified pulsar or pulsar+ssl URL where the message should be sent to. It is optional. The message will be sent to Pulsar URL specified under `PulsarBrokerURL` in the pulsar-beam.yml file if it is absent.
+
+Query parameters
+1. SubscriptionType -> Supported type strings are `exclusive` as default, `shared`, and `failover`
+2. SubscriptionName -> the length must be 5 characters or longer. An auto-generated name will be provided in absence. Only the auto-generated subscription will be unsubscribed.
+3. size -> The batch size. The default is 10.
+4. perMessageTimeoutMs -> is the time out in milliseconds per message. The default is 300ms.
 
 ### Webhook registration
 Webhook registration is done via REST API backed by a database of your choice, such as MongoDB, in momery cache, and Pulsar itself. Yes, you can use a compacted Pulsar topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.
@@ -149,7 +165,7 @@ One end to end test is under `./src/e2e/e2etest.go`, that performs the following
 4. Verify the replied message on the sink topic
 5. Delete the topic and its webhook document via RESTful API
 
-Since the set up is non-trivial involving Pulsar Beam, a Cloud function or webhook, the test tool, and Pulsar itself with SSL, we recommend to take advantage of [the free plan at Kafkaesque.io](https://kafkaesque.io) as the Pulsar server and a Cloud Function that we have verified GCP Fcuntion, Azure Function or AWS Lambda will suffice in the e2e flow.
+Since the set up is non-trivial involving Pulsar Beam, a Cloud function or webhook, the test tool, and Pulsar itself with SSL, we recommend to take advantage of [the free plan at kesque.com](https://kesque.com) as the Pulsar server and a Cloud Function that we have verified GCP Fcuntion, Azure Function or AWS Lambda will suffice in the e2e flow.
 
  Step to perform unit test
 ```bash

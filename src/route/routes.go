@@ -72,6 +72,13 @@ var ReceiverRoutes = Routes{
 		SSEHandler,
 		middleware.AuthVerifyJWT,
 	},
+	Route{
+		"poll-messages",
+		http.MethodGet,
+		"/v2/poll/{persistent}/{tenant}/{namespace}/{topic}",
+		PollHandler,
+		middleware.AuthVerifyJWT,
+	},
 }
 
 // RestRoutes definition

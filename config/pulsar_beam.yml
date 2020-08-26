@@ -7,4 +7,5 @@ PulsarPrivateKey: ./unit-test/example_private_key
 PbDbInterval: 10s
 DbConnectionStr: mongodb://localhost:27017
 DbName: 
-DbPassword: 
+DbPassword:
+TrustStore: "/etc/ssl/certs/ca-bundle.crt"
