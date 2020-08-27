@@ -40,6 +40,9 @@ jobs:
   build_test:
     name: build and test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: [4.2]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v1
@@ -51,6 +54,10 @@ jobs:
         with:
           fetch-depth: 1
           path: go/src/github.com/kafkaesque-io/pulsar-beam
+      - name: Start MongoDB v${{ matrix.mongodb-version }}
+        uses: supercharge/mongodb-github-action@1.2.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
       - name: Verify MongoDB Installation and Status
         run: |
           ls /var/lib/mongodb
