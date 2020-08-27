@@ -51,12 +51,6 @@ jobs:
         with:
           fetch-depth: 1
           path: go/src/github.com/kafkaesque-io/pulsar-beam
-      - name: Install MongoDB
-        run: |
-          echo $GITHUB_EVENT_NAME
-          echo $GITHUB_EVENT_PATH
-          sudo apt-get update
-          sudo apt-get install -y mongodb
       - name: Verify MongoDB Installation and Status
         run: |
           ls /var/lib/mongodb
