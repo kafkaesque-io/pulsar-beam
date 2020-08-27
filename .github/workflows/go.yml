@@ -60,8 +60,7 @@ jobs:
           mongodb-version: ${{ matrix.mongodb-version }}
       - name: Verify MongoDB Installation and Status
         run: |
-          ls /var/lib/mongodb
-          sudo systemctl status mongodb
+          sudo docker ps
       - name: Build Binary
         run: |
           go mod download
