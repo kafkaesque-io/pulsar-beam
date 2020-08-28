@@ -1,15 +1,13 @@
 package broker
 
 import (
+	"strings"
+	"time"
+
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/kafkaesque-io/pulsar-beam/src/model"
 	"github.com/kafkaesque-io/pulsar-beam/src/pulsardriver"
-)
-
-const (
-	// SSEBrokerMaxSize the max size of the number of HTTP SSE session is supported
-	SSEBrokerMaxSize = 200
-
-	// TODO add counters and max limit for SSEBroker
+	log "github.com/sirupsen/logrus"
 )
 
 // GetPulsarClientConsumer returns Puslar client and consumer interface objects
@@ -30,4 +28,34 @@ func GetPulsarClientConsumer(url, token, topic, subscriptionName string, subType
 	}
 
 	return client, consumer, nil
+}
+
+// PollBatchMessages polls a batch of consumer messages
+func PollBatchMessages(url, token, topic, subscriptionName string, subType pulsar.SubscriptionType, size, perMessageTimeoutMs int) (model.PulsarMessages, error) {
+	log.Infof("getbatchmessages called")
+	client, consumer, err := GetPulsarClientConsumer(url, token, topic, subscriptionName, subType, pulsar.SubscriptionPositionEarliest)
+	if err != nil {
+		return model.NewPulsarMessages(size), err
+	}
+	if strings.HasPrefix(subscriptionName, model.NonResumable) {
+		defer consumer.Unsubscribe()
+	}
+	defer consumer.Close()
+	defer client.Close()
+
+	messages := model.NewPulsarMessages(size)
+	consumChan := consumer.Chan()
+	for i := 0; i < size; i++ {
+		select {
+		case msg := <-consumChan:
+			// log.Infof("received message %s on topic %s", string(msg.Payload()), msg.Topic())
+			messages.AddPulsarMessage(msg)
+			consumer.Ack(msg)
+
+		case <-time.After(time.Duration(perMessageTimeoutMs) * time.Millisecond): //TODO: this should be configurable
+			i = size
+		}
+	}
+
+	return messages, nil
 }

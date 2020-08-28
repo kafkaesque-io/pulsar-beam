@@ -40,6 +40,9 @@ jobs:
   build_test:
     name: build and test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: [4.2]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v1
@@ -51,16 +54,13 @@ jobs:
         with:
           fetch-depth: 1
           path: go/src/github.com/kafkaesque-io/pulsar-beam
-      - name: Install MongoDB
-        run: |
-          echo $GITHUB_EVENT_NAME
-          echo $GITHUB_EVENT_PATH
-          sudo apt-get update
-          sudo apt-get install -y mongodb
+      - name: Start MongoDB v${{ matrix.mongodb-version }}
+        uses: supercharge/mongodb-github-action@1.2.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
       - name: Verify MongoDB Installation and Status
         run: |
-          ls /var/lib/mongodb
-          sudo systemctl status mongodb
+          sudo docker ps
       - name: Build Binary
         run: |
           go mod download
@@ -111,7 +111,10 @@ jobs:
   e2e_test:
     name: e2e_test
     needs: [analysis, build_test]
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: [4.2]
     steps:
       - name: Check out code
         uses: actions/checkout@v1
@@ -123,16 +126,13 @@ jobs:
         run: |
           pwd
           go mod download
-      - name: Install MongoDB
-        run: |
-          echo $GITHUB_EVENT_NAME
-          echo $GITHUB_EVENT_PATH
-          sudo apt-get update
-          sudo apt-get install -y mongodb
+      - name: Start MongoDB v${{ matrix.mongodb-version }}
+        uses: supercharge/mongodb-github-action@1.2.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
       - name: Verify MongoDB Installation and Status
         run: |
-          ls /var/lib/mongodb
-          sudo systemctl status mongodb
+          sudo docker ps
       - name: Set up root certificate
         env:
           PULSAR_CLIENT_CERT: ${{ secrets.PULSAR_CLIENT_CERT }}

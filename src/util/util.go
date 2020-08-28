@@ -71,7 +71,6 @@ func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, p
 	} else if pulsarURL == "" {
 		return "", "", "", fmt.Errorf("missing configured Pulsar URL")
 	}
-	fmt.Printf("pulsarURL is %s\n", pulsarURL)
 	return token, topicFN, pulsarURL, nil
 }
 
@@ -141,4 +140,37 @@ func QueryParamString(params url.Values, name, defaultValue string) string {
 		return str[0]
 	}
 	return defaultValue
+}
+
+// QueryParamInt returns a URL query parameter's value with a default value
+func QueryParamInt(params url.Values, name string, defaultValue int) int {
+	if str, ok := params[name]; ok {
+		if num, err := strconv.Atoi(str[0]); err == nil {
+			return num
+		}
+	}
+	return defaultValue
+}
+
+// TokenizeTopicFullName tokenizes a topic full name into persistent, tenant, namespace, and topic name.
+func TokenizeTopicFullName(topicFn string) (isPersistent bool, tenant, namespace, topic string, err error) {
+	var topicRoute string
+	if strings.HasPrefix(topicFn, "persistent://") {
+		topicRoute = strings.Replace(topicFn, "persistent://", "", 1)
+		isPersistent = true
+	} else if strings.HasPrefix(topicFn, "non-persistent://") {
+		topicRoute = strings.Replace(topicFn, "non-persistent://", "", 1)
+	} else {
+		return false, "", "", "", fmt.Errorf("invalid persistent or non-persistent part")
+	}
+
+	parts := strings.Split(topicRoute, "/")
+	if len(parts) == 3 {
+		return isPersistent, parts[0], parts[1], parts[2], nil
+	} else if len(parts) == 2 {
+		return isPersistent, parts[0], parts[1], "", nil
+	} else {
+		return false, "", "", "", fmt.Errorf("missing tenant, namespace, or topic name")
+	}
+
 }
