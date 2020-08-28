@@ -50,3 +50,8 @@ func (msgs *PulsarMessages) AddPulsarMessage(msg pulsar.Message) bool {
 
 	return msgs.Size >= msgs.Limit
 }
+
+// IsEmpty checks if the message list is empty
+func (msgs *PulsarMessages) IsEmpty() bool {
+	return msgs.Size == 0
+}

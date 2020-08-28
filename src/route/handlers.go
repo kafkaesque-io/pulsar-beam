@@ -133,15 +133,21 @@ func PollHandler(w http.ResponseWriter, r *http.Request) {
 	// subscription initial position is always set to earliest since this is short poll
 	msgs, err := broker.PollBatchMessages(pulsarURL, token, topicFN, subName, subType, size, perMessageTimeoutMs)
 	if err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
+		return
+	}
+
+	if msgs.IsEmpty() {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	data, err := json.Marshal(msgs)
 	if err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusUnprocessableEntity)
+		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
 
