@@ -127,7 +127,7 @@ func PollHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	size := util.QueryParamInt(params, "batch", 10)
+	size := util.QueryParamInt(params, "batchSize", 10)
 	perMessageTimeoutMs := util.QueryParamInt(params, "perMessageTimeoutMs", 300)
 
 	// subscription initial position is always set to earliest since this is short poll

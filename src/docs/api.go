@@ -32,7 +32,7 @@ import (
 //       "$ref": "#/definitions/errorResponse"
 
 // swagger:operation GET /v2/sse/{persistent}/{tenant}/{namespace}/{topic} SSE-Event-Streaming idOfHTTPSeverSentEvent
-// The endpoint receives a message in HTTP body that will be sent to Pulsar.
+// The HTTP SSE endpoint receives messages in HTTP body from a Pulsar topic.
 //
 // ---
 // produces:
@@ -58,8 +58,55 @@ import (
 //   type: string
 //   required: false
 // responses:
+//   '401':
+//     description: authentication failure
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '422':
+//     description: invalid request parameters
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+//   '500':
+//     description: failed to subscribe or receive messages from Pulsar
+//     schema:
+//       "$ref": "#/definitions/errorResponse"
+
+// swagger:operation GET /v2/poll/{persistent}/{tenant}/{namespace}/{topic} Long-Polling idOfHTTPLongPolling
+// The long polling endpoint receives messages in HTTP body from a Pulsar topic.
+//
+// ---
+// produces:
+// - text/event-poll
+// headers:
+// - name: PulsarURL
+//   description: Specify a pulsar cluster. This can be ignored by the server side to enforce connecting to a local Pulsar cluster.
+//   required: false
+// parameters:
+// - name: SubscriptionType
+//   in: query
+//   description: specify subscription type in exclusive, shared, keyshared, or failover, the default is exclusive
+//   type: string
+//   required: false
+// - name: SubscriptionName
+//   in: query
+//   description: subscription name in minimum 5 charaters, a random subscription will be generated if not specified
+//   type: string
+//   required: false
+// - name: batchSize
+//   in: query
+//   description: the batch size of the message list. The poll responds to the client When the batch size is reached. The default is 10 messages
+//   type: integer
+//   required: false
+// - name: perMessageTimeoutMs
+//   in: query
+//   description: Per message time out in milliseconds to wait the message from the Pulsar topic. The default is 300 millisecond
+//   type: integer
+//   required: false
+// responses:
 //   '200':
-//     description: successfully subscribed to Pulsar
+//     description: successfully subscribed and received messages from a Pulsar topic
+//   '204':
+//     description: successfully subscribed to a Pulsar topic but receives no messages
 //   '401':
 //     description: authentication failure
 //     schema:

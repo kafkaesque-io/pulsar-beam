@@ -72,8 +72,8 @@ These HTTP headers may be required to map to Pulsar topic.
 Query parameters
 1. SubscriptionType -> Supported type strings are `exclusive` as default, `shared`, and `failover`
 2. SubscriptionName -> the length must be 5 characters or longer. An auto-generated name will be provided in absence. Only the auto-generated subscription will be unsubscribed.
-3. size -> The batch size. The default is 10.
-4. perMessageTimeoutMs -> is a wait time out for the next message to arrive. It is in milliseconds per message. The default is 300ms.
+3. batchSize -> Replies to a client when the batch size limit is reached. The default is 10 messages per batch. 
+4. perMessageTimeoutMs -> is a time out to wait for the next message's arrival from a Pulsar topic. It is in milliseconds per message. The default is 300ms.
 
 ### Webhook registration
 Webhook registration is done via REST API backed by a database of your choice, such as MongoDB, in momery cache, and Pulsar itself. Yes, you can use a compacted Pulsar topic as a database table to perform CRUD. The configuration parameter is `"PbDbType": "inmemory",` in the `pulsar_beam.yml` file or the env variable `PbDbType`.
