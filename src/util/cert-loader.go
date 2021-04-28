@@ -103,6 +103,7 @@ func listenAndServeTLS(address, certFile, keyFile string, handler http.Handler) 
 	// Create tlsConfig that uses a custom GetCertificate method
 	// Defined by GetCertificate func at  https://golang.org/pkg/crypto/tls/
 	tlsConfig := tls.Config{
+		MinVersion: tls.VersionTLS12,
 		GetCertificate: func(i *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			c, ok := cert.Load().(tls.Certificate)
 			if !ok {
