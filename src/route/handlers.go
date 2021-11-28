@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"compress/gzip"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gorilla/mux"
@@ -74,7 +75,18 @@ func StatusPage(w http.ResponseWriter, r *http.Request) {
 
 // ReceiveHandler - the message receiver handler
 func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	b, err := ioutil.ReadAll(r.Body)
+	var b []byte
+	var err error
+	if r.Header.Get("Content-Encoding") == "gzip" {
+		g, gerr := gzip.NewReader(r.Body)
+		if gerr != nil {
+			util.ResponseErrorJSON(gerr, w, http.StatusInternalServerError)
+			return
+		}
+		b, err = ioutil.ReadAll(g)
+	} else {
+		b, err = ioutil.ReadAll(r.Body)
+	}
 	defer r.Body.Close()
 	if err != nil {
 		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
