@@ -3,6 +3,7 @@ package pulsardriver
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"time"
 
@@ -80,7 +81,7 @@ func SendToPulsar(url, token, topic string, data []byte, async bool) error {
 	if err != nil {
 		// this is very bad if happens
 		log.Warnf("NewUUID generation error %v", err)
-		id = string(time.Now().Unix())
+		id = strconv.FormatInt(time.Now().Unix(), 10)
 	}
 	prop := map[string]string{"PulsarBeamId": id}
 	//TODO: add cluster origin and maybe other properties
