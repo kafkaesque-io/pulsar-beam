@@ -3,13 +3,13 @@ module github.com/kafkaesque-io/pulsar-beam
 go 1.17
 
 require (
-	github.com/apache/pulsar-client-go v0.7.1-0.20220117080525-a119bab0f859
+	github.com/apache/pulsar-client-go v0.8.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/gops v0.3.10
 	github.com/gorilla/mux v1.7.4
 	github.com/hashicorp/go-retryablehttp v0.6.4
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.6.0
 	go.mongodb.org/mongo-driver v1.8.0
@@ -19,7 +19,7 @@ require (
 	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
-	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20211108044248-fe3b7c4e445b // indirect
+	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220120090717-25e59572242e // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -66,6 +66,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
-
-// temporary pulsar client until https://github.com/apache/pulsar-client-go/pull/238 can be merged
-replace github.com/apache/pulsar-client-go/oauth2 => github.com/zzzming/pulsar-client-go/oauth2 v0.0.0-20220118161656-73e4b6371a36
