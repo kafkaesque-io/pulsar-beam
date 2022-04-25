@@ -9,7 +9,7 @@ LABEL maintainer="kesque"
 RUN apk --no-cache add build-base git
 
 # Build Delve
-RUN go get github.com/google/gops
+RUN go install github.com/google/gops@latest
 
 WORKDIR /root/
 ADD . /root
