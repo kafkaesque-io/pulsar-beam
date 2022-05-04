@@ -192,11 +192,11 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
 		return
 	}
+	defer client.Close()
+	defer consumer.Close()
 	if strings.HasPrefix(subName, model.NonResumable) {
 		defer consumer.Unsubscribe()
 	}
-	defer consumer.Close()
-	defer client.Close()
 
 	consumChan := consumer.Chan()
 	for {
