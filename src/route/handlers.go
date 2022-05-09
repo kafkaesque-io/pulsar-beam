@@ -73,6 +73,12 @@ func StatusPage(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Full message structure that contains all request information
+type InfoRichMessage struct {
+	Headers http.Header `json:"headers"`
+	Body    string `json:"body"`
+}
+
 // ReceiveHandler - the message receiver handler
 func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	var b []byte
@@ -96,6 +102,21 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		util.ResponseErrorJSON(err, w, http.StatusUnauthorized)
 		return
+	}
+	
+	// Include headers information into the message payload if url has includeHeaders=true
+	includeHeaders, isInfoRichMessage := r.URL.Query()["includeHeaders"]
+	
+	var infoRichMessage *InfoRichMessage
+    
+    if isInfoRichMessage && includeHeaders[0] != "false"  {
+        infoRichMessage = new(InfoRichMessage)
+		infoRichMessage.Headers = r.Header
+		infoRichMessage.Body = string(b)
+    }
+	
+	if infoRichMessage != nil {
+		b, _ = json.Marshal(infoRichMessage)
 	}
 
 	topicFN, err2 := GetTopicFnFromRoute(mux.Vars(r))
