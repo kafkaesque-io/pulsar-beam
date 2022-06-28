@@ -21,46 +21,54 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type WebhookBroker struct {
+	// key is the hash of topic full name and pulsar url, and subscription name
+	webhooks  map[string]chan *SubCloseSignal
+	dbHandler db.Db
+	sync.RWMutex
+}
+
 // SubCloseSignal is a signal object to pass for channel
 type SubCloseSignal struct{}
 
-// key is the hash of topic full name and pulsar url, and subscription name
-var webhooks = make(map[string]chan *SubCloseSignal)
-var whLock = sync.RWMutex{}
+func NewWebhookBroker(config *util.Configuration) *WebhookBroker {
+	return &WebhookBroker{
+		dbHandler: db.NewDbWithPanic(config.PbDbType),
+		webhooks:  make(map[string]chan *SubCloseSignal),
+	}
+}
 
 // ReadWebhook reads a thread safe map
-func ReadWebhook(key string) (chan *SubCloseSignal, bool) {
-	whLock.RLock()
-	defer whLock.RUnlock()
-	c, ok := webhooks[key]
+func (wb *WebhookBroker) ReadWebhook(key string) (chan *SubCloseSignal, bool) {
+	wb.RLock()
+	defer wb.RUnlock()
+	c, ok := wb.webhooks[key]
 	return c, ok
 }
 
 // WriteWebhook writes a key/value to a thread safe map
-func WriteWebhook(key string, c chan *SubCloseSignal) {
-	whLock.Lock()
-	defer whLock.Unlock()
-	webhooks[key] = c
+func (wb *WebhookBroker) WriteWebhook(key string, c chan *SubCloseSignal) {
+	wb.Lock()
+	defer wb.Unlock()
+	wb.webhooks[key] = c
 }
 
 // DeleteWebhook deletes a key from a thread safe map
-func DeleteWebhook(key string) bool {
-	whLock.Lock()
-	defer whLock.Unlock()
-	if c, ok := webhooks[key]; ok {
+func (wb *WebhookBroker) DeleteWebhook(key string) bool {
+	wb.Lock()
+	defer wb.Unlock()
+	if c, ok := wb.webhooks[key]; ok {
 		c <- &SubCloseSignal{}
-		delete(webhooks, key)
+		delete(wb.webhooks, key)
 		//channel is deleted where it's been created with `defer`
 		return ok
 	}
 	return false
 }
 
-var singleDb db.Db
-
 // Init initializes webhook configuration database
 func Init() {
-	NewDbHandler()
+	svr := NewWebhookBroker(&util.Config)
 	durationStr := util.AssignString(util.GetConfig().PbDbInterval, "180s")
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
@@ -70,21 +78,16 @@ func Init() {
 	log.Warnf("beam database pull every %.0f seconds", duration.Seconds())
 
 	go func() {
-		run()
+		svr.run()
 		ticker := time.NewTicker(duration)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				run()
+				svr.run()
 			}
 		}
 	}()
-}
-
-// NewDbHandler gets a local copy of Db handler
-func NewDbHandler() {
-	log.Infof("webhook database init...")
-	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
 }
 
 // pushWebhook sends data to a webhook interface
@@ -163,7 +166,7 @@ func pushAndAck(c pulsar.Consumer, msg pulsar.Message, url string, data []byte, 
 
 // ConsumeLoop consumes data from Pulsar topic
 // Do not use context since go vet will puke that requires cancel invoked in the same function
-func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookConfig) error {
+func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookConfig) error {
 	headers := whCfg.Headers
 	_, err := model.GetSubscriptionType(whCfg.SubscriptionType)
 	if err != nil {
@@ -179,7 +182,7 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 	}
 
 	terminate := make(chan *SubCloseSignal, 2)
-	WriteWebhook(subscriptionKey, terminate)
+	wb.WriteWebhook(subscriptionKey, terminate)
 	defer close(terminate)
 	ctx := context.Background()
 
@@ -189,7 +192,7 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 	retryMax := 3
 	for {
 		if retry > retryMax {
-			cancelConsumer(subscriptionKey)
+			wb.cancelConsumer(subscriptionKey)
 			return fmt.Errorf("consumer retried %d times, max reached", retryMax)
 		}
 		msg, err := c.Receive(ctx)
@@ -238,41 +241,41 @@ func ConsumeLoop(url, token, topic, subscriptionKey string, whCfg model.WebhookC
 
 }
 
-func run() {
+func (wb *WebhookBroker) run() {
 	// key is hash of topic name and pulsar url, and subscription name
 	subscriptionSet := make(map[string]bool)
 
-	for _, cfg := range LoadConfig() {
+	for _, cfg := range wb.LoadConfig() {
 		for _, whCfg := range cfg.Webhooks {
 			topic := cfg.TopicFullName
 			token := cfg.Token
 			url := cfg.PulsarURL
 			subscriptionKey := cfg.Key + whCfg.URL
 			status := whCfg.WebhookStatus
-			_, ok := ReadWebhook(subscriptionKey)
+			_, ok := wb.ReadWebhook(subscriptionKey)
 			if status == model.Activated {
 				subscriptionSet[subscriptionKey] = true
 				if !ok {
 					log.Infof("start activated webhook for topic subscription %v", subscriptionKey)
-					go ConsumeLoop(url, token, topic, subscriptionKey, whCfg)
+					go wb.ConsumeLoop(url, token, topic, subscriptionKey, whCfg)
 				}
 			}
 		}
 	}
 
 	// cancel any webhook which is no longer required to be activated by the database
-	for k := range webhooks {
+	for k := range wb.webhooks {
 		if subscriptionSet[k] != true {
 			log.Infof("cancel webhook consumer subscription key %s", k)
-			cancelConsumer(k)
+			wb.cancelConsumer(k)
 		}
 	}
-	log.Infof("load webhooks size %d", len(webhooks))
+	log.Infof("load webhooks size %d", len(wb.webhooks))
 }
 
 // LoadConfig loads the entire topic documents from the database
-func LoadConfig() []*model.TopicConfig {
-	cfgs, err := singleDb.Load()
+func (wb *WebhookBroker) LoadConfig() []*model.TopicConfig {
+	cfgs, err := wb.dbHandler.Load()
 	if err != nil {
 		log.Errorf("failed to load topics from database error %v", err.Error())
 	}
@@ -280,8 +283,8 @@ func LoadConfig() []*model.TopicConfig {
 	return cfgs
 }
 
-func cancelConsumer(key string) error {
-	ok := DeleteWebhook(key)
+func (wb *WebhookBroker) cancelConsumer(key string) error {
+	ok := wb.DeleteWebhook(key)
 	if ok {
 		log.Infof("cancel consumer %v", key)
 		pulsardriver.CancelPulsarConsumer(key)

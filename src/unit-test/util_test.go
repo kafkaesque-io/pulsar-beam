@@ -79,24 +79,6 @@ func TestLoadConfigFile(t *testing.T) {
 	assert(t, config2.PbDbType == dbType, "default config setting")
 }
 
-func TestEffectiveRoutes(t *testing.T) {
-	receiverRoutesLen := len(route.ReceiverRoutes)
-	restRoutesLen := len(route.RestRoutes)
-	prometheusLen := len(route.PrometheusRoute)
-	mode := "hybrid"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+restRoutesLen+prometheusLen), "check hybrid required routes")
-	mode = "rest"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (restRoutesLen+prometheusLen), "check rest required routes")
-	mode = "receiver"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (receiverRoutesLen+prometheusLen), "check receiver required routes")
-	mode = "tokenserver"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen), "check required tokenserver routes")
-	mode = "http"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen+receiverRoutesLen+restRoutesLen), "check required http routes")
-	mode = "http2"
-	assert(t, len(route.GetEffectiveRoutes(&mode)) == (len(route.TokenServerRoutes)+prometheusLen+receiverRoutesLen), "check required http2 routes")
-}
-
 func TestHTTPRouters(t *testing.T) {
 	mode := "hybrid"
 	router := route.NewRouter(&mode)
@@ -175,36 +157,37 @@ func TestDefaultPulsarURLInReceiverHeader(t *testing.T) {
 
 func TestThreadSafeMap(t *testing.T) {
 	// TODO add more goroutine to test concurrency
+	wb := broker.NewWebhookBroker(&Configuration{})
 
-	_, rc := broker.ReadWebhook("first")
+	_, rc := wb.ReadWebhook("first")
 	equals(t, false, rc)
 
 	sig := make(chan *broker.SubCloseSignal, 2)
 
-	broker.WriteWebhook("first", sig)
-	_, rc = broker.ReadWebhook("first")
+	wb.WriteWebhook("first", sig)
+	_, rc = wb.ReadWebhook("first")
 	equals(t, true, rc)
-	broker.DeleteWebhook("first")
-	_, rc = broker.ReadWebhook("first")
+	wb.DeleteWebhook("first")
+	_, rc = wb.ReadWebhook("first")
 	equals(t, false, rc)
 	go func() {
 		for i := 0; i < 1000; i++ {
 			sig2 := make(chan *broker.SubCloseSignal, 2)
-			broker.WriteWebhook("key"+strconv.Itoa(i), sig2)
-			broker.WriteWebhook("first", sig2)
+			wb.WriteWebhook("key"+strconv.Itoa(i), sig2)
+			wb.WriteWebhook("first", sig2)
 		}
 	}()
 	go func() {
 		for i := 0; i < 1000; i++ {
-			broker.ReadWebhook("key" + strconv.Itoa(i))
-			broker.ReadWebhook("first")
+			wb.ReadWebhook("key" + strconv.Itoa(i))
+			wb.ReadWebhook("first")
 		}
 	}()
 	go func() {
 		for i := 0; i < 1000; i++ {
 			sig3 := make(chan *broker.SubCloseSignal, 2)
-			broker.DeleteWebhook("key" + strconv.Itoa(i))
-			broker.WriteWebhook("first"+strconv.Itoa(i), sig3)
+			wb.DeleteWebhook("key" + strconv.Itoa(i))
+			wb.WriteWebhook("first"+strconv.Itoa(i), sig3)
 		}
 	}()
 }
