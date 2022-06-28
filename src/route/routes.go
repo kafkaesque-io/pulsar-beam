@@ -2,6 +2,7 @@ package route
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/gorilla/mux"
 	"github.com/kafkaesque-io/pulsar-beam/src/middleware"
@@ -38,6 +39,44 @@ var PrometheusRoute = Routes{
 		http.MethodGet,
 		"/metrics",
 		promhttp.Handler().ServeHTTP,
+		middleware.NoAuth,
+	},
+}
+
+var PprofRoute = Routes{
+	Route{
+		"Pprof Index",
+		http.MethodGet,
+		"/debug/pprof/",
+		pprof.Index,
+		middleware.NoAuth,
+	},
+	Route{
+		"Pprof Cmdline",
+		http.MethodGet,
+		"/debug/pprof/cmdline",
+		pprof.Cmdline,
+		middleware.NoAuth,
+	},
+	Route{
+		"Pprof Profile",
+		http.MethodGet,
+		"/debug/pprof/profile",
+		pprof.Profile,
+		middleware.NoAuth,
+	},
+	Route{
+		"Pprof Symbol",
+		http.MethodGet,
+		"/debug/pprof/symbol",
+		pprof.Symbol,
+		middleware.NoAuth,
+	},
+	Route{
+		"Pprof Trace",
+		http.MethodGet,
+		"/debug/pprof/trace",
+		pprof.Trace,
 		middleware.NoAuth,
 	},
 }
