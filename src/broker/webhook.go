@@ -180,7 +180,7 @@ func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, 
 	}
 	c, err := pulsardriver.GetPulsarConsumer(url, token, topic, whCfg.Subscription, whCfg.InitialPosition, whCfg.SubscriptionType, subscriptionKey)
 	if err != nil {
-		return fmt.Errorf("Failed to create Pulsar subscription %v", err)
+		return fmt.Errorf("failed to create Pulsar subscription %v", err)
 	}
 
 	terminate := make(chan *SubCloseSignal, 2)
@@ -217,7 +217,7 @@ func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, 
 		} else if msg != nil {
 			retry = 0
 			if wb.l.Level == log.DebugLevel {
-				wb.l.Debugf("PulsarMessageId:%#v", msg.ID())
+				wb.l.Debugf("PulsarMessageId:%v", msg.ID())
 			}
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%#v", msg.ID()))
 			headers = append(headers, "PulsarPublishedTime:"+msg.PublishTime().String())
@@ -233,9 +233,6 @@ func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, 
 			data := msg.Payload()
 			if json.Valid(data) {
 				headers = append(headers, "content-type:application/json")
-			}
-			if wb.l.Level == log.DebugLevel {
-				wb.l.Debug(string(data))
 			}
 			pushAndAck(c, msg, whCfg.URL, data, headers)
 		}
@@ -267,7 +264,7 @@ func (wb *WebhookBroker) run() {
 
 	// cancel any webhook which is no longer required to be activated by the database
 	for k := range wb.webhooks {
-		if subscriptionSet[k] != true {
+		if !subscriptionSet[k] {
 			wb.l.Infof("cancel webhook consumer subscription key %s", k)
 			wb.cancelConsumer(k)
 		}
