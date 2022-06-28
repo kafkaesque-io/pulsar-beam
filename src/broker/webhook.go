@@ -25,6 +25,7 @@ type WebhookBroker struct {
 	// key is the hash of topic full name and pulsar url, and subscription name
 	webhooks  map[string]chan *SubCloseSignal
 	dbHandler db.Db
+	l         *log.Entry
 	sync.RWMutex
 }
 
@@ -35,6 +36,7 @@ func NewWebhookBroker(config *util.Configuration) *WebhookBroker {
 	return &WebhookBroker{
 		dbHandler: db.NewDbWithPanic(config.PbDbType),
 		webhooks:  make(map[string]chan *SubCloseSignal),
+		l:         log.WithFields(log.Fields{"app": "webhookbroker"}),
 	}
 }
 
@@ -67,15 +69,15 @@ func (wb *WebhookBroker) DeleteWebhook(key string) bool {
 }
 
 // Init initializes webhook configuration database
-func Init() {
-	svr := NewWebhookBroker(&util.Config)
-	durationStr := util.AssignString(util.GetConfig().PbDbInterval, "180s")
+func Init(config *util.Configuration) {
+	svr := NewWebhookBroker(config)
+	durationStr := util.AssignString(config.PbDbInterval, "180s")
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
-		log.Errorf("specified duration %s error %v", durationStr, err)
+		svr.l.Errorf("specified duration %s error %v", durationStr, err)
 		duration, _ = time.ParseDuration("180s")
 	}
-	log.Warnf("beam database pull every %.0f seconds", duration.Seconds())
+	svr.l.Infof("beam database pull every %.0f seconds", duration.Seconds())
 
 	go func() {
 		svr.run()
@@ -197,13 +199,13 @@ func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, 
 		}
 		msg, err := c.Receive(ctx)
 		if err != nil {
-			log.Infof("error from consumer loop receive: %v\n", err)
+			wb.l.Infof("error from consumer loop receive: %v\n", err)
 			retry++
 			ticker := time.NewTicker(time.Duration(2*retry) * time.Second)
 			defer ticker.Stop()
 			select {
 			case <-terminate:
-				log.Infof("subscription %s received signal to exit consumer loop", subscriptionKey)
+				wb.l.Infof("subscription %s received signal to exit consumer loop", subscriptionKey)
 				return nil
 			case <-ticker.C:
 				//reconnect after error
@@ -214,8 +216,8 @@ func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, 
 			}
 		} else if msg != nil {
 			retry = 0
-			if log.GetLevel() == log.DebugLevel {
-				log.Debugf("PulsarMessageId:%#v", msg.ID())
+			if wb.l.Level == log.DebugLevel {
+				wb.l.Debugf("PulsarMessageId:%#v", msg.ID())
 			}
 			headers = append(headers, fmt.Sprintf("PulsarMessageId:%#v", msg.ID()))
 			headers = append(headers, "PulsarPublishedTime:"+msg.PublishTime().String())
@@ -232,8 +234,8 @@ func (wb *WebhookBroker) ConsumeLoop(url, token, topic, subscriptionKey string, 
 			if json.Valid(data) {
 				headers = append(headers, "content-type:application/json")
 			}
-			if log.GetLevel() == log.DebugLevel {
-				log.Debug(string(data))
+			if wb.l.Level == log.DebugLevel {
+				wb.l.Debug(string(data))
 			}
 			pushAndAck(c, msg, whCfg.URL, data, headers)
 		}
@@ -256,7 +258,7 @@ func (wb *WebhookBroker) run() {
 			if status == model.Activated {
 				subscriptionSet[subscriptionKey] = true
 				if !ok {
-					log.Infof("start activated webhook for topic subscription %v", subscriptionKey)
+					wb.l.Infof("start activated webhook for topic subscription %v", subscriptionKey)
 					go wb.ConsumeLoop(url, token, topic, subscriptionKey, whCfg)
 				}
 			}
@@ -266,18 +268,18 @@ func (wb *WebhookBroker) run() {
 	// cancel any webhook which is no longer required to be activated by the database
 	for k := range wb.webhooks {
 		if subscriptionSet[k] != true {
-			log.Infof("cancel webhook consumer subscription key %s", k)
+			wb.l.Infof("cancel webhook consumer subscription key %s", k)
 			wb.cancelConsumer(k)
 		}
 	}
-	log.Infof("load webhooks size %d", len(wb.webhooks))
+	wb.l.Infof("load webhooks size %d", len(wb.webhooks))
 }
 
 // LoadConfig loads the entire topic documents from the database
 func (wb *WebhookBroker) LoadConfig() []*model.TopicConfig {
 	cfgs, err := wb.dbHandler.Load()
 	if err != nil {
-		log.Errorf("failed to load topics from database error %v", err.Error())
+		wb.l.Errorf("failed to load topics from database error %v", err.Error())
 	}
 
 	return cfgs
@@ -286,7 +288,7 @@ func (wb *WebhookBroker) LoadConfig() []*model.TopicConfig {
 func (wb *WebhookBroker) cancelConsumer(key string) error {
 	ok := wb.DeleteWebhook(key)
 	if ok {
-		log.Infof("cancel consumer %v", key)
+		wb.l.Infof("cancel consumer %v", key)
 		pulsardriver.CancelPulsarConsumer(key)
 		return nil
 	}

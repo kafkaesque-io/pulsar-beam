@@ -28,7 +28,7 @@ func main() {
 	}
 
 	exit := make(chan bool) // future use to exit the main program if in broker only mode
-	util.Init()
+	config := util.Init()
 
 	flag.Parse()
 	log.Warnf("start server mode %s", mode)
@@ -37,7 +37,7 @@ func main() {
 	}
 
 	if util.IsBrokerRequired(&mode) {
-		broker.Init()
+		broker.Init(config)
 	}
 	if util.IsHTTPRouterRequired(&mode) {
 		route.Init()
