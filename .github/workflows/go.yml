@@ -145,33 +145,6 @@ jobs:
           ls /usr/local/share/ca-certificate
           sudo update-ca-certificates
           ls /etc/ssl/certs
-      - name: Start daemon and run e2e test
-        env:
-          PORT: 8085
-          PbDbInterval: 15s
-          TrustStore: /etc/ssl/certs/ca-certificates.crt
-          FN_SINK_TOPIC: ${{ secrets.FN_SINK_TOPIC }}
-          PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
-          PULSAR_URI: ${{ secrets.PULSAR_URI }}
-          REST_API_TOKEN: ${{ secrets.REST_API_TOKEN }}
-          WEBHOOK2_URL: ${{ secrets.WEBHOOK2_URL }}
-          WEBHOOK_TOPIC: ${{ secrets.WEBHOOK_TOPIC }}
-          REST_DB_TABLE_TOPIC: ${{ secrets.REST_DB_TABLE_TOPIC }}
-        run: |
-          sudo apt-get install -y net-tools
-          ls -l /etc/ssl/certs/ca-certificates.crt
-          pwd
-          cd src
-          go build -o main ./main.go
-          ls
-          ./main > ./beam.log &
-          sleep 15
-          sudo netstat -tulpn | grep LISTEN
-          ps -eaf | grep "main"
-          cd e2e
-          pwd
-          curl -v -H "Authorization: testkey" http://localhost:8085/status
-          go run ./e2etest.go
 
   docker:
     name: docker
