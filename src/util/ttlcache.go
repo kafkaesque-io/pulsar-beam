@@ -58,6 +58,7 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 // eventLoop name is a disguise. I should convert the lock/unlock to an event loop
 func (c *Cache) eventLoop() {
 	ticker := time.NewTicker(c.opt.CleanInterval)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:

@@ -43,6 +43,7 @@ func watchFile(filePath string, updated chan *updatedChann) error {
 	}
 
 	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:

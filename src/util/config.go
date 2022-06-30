@@ -101,18 +101,19 @@ var (
 )
 
 // Init initializes configuration
-func Init() {
+func Init() *Configuration {
 	configFile := AssignString(os.Getenv("PULSAR_BEAM_CONFIG"), DefaultConfigFile)
-	ReadConfigFile(configFile)
+	config := ReadConfigFile(configFile)
 
 	log.SetLevel(logLevel(Config.LogLevel))
 
 	log.Warnf("Configuration built from file - %s", configFile)
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
+	return config
 }
 
 // ReadConfigFile reads configuration file.
-func ReadConfigFile(configFile string) {
+func ReadConfigFile(configFile string) *Configuration {
 	fileBytes, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		fmt.Printf("failed to load configuration file %s", configFile)
@@ -165,6 +166,7 @@ func ReadConfigFile(configFile string) {
 		Config.PulsarPublicKey, Config.PulsarPrivateKey)
 	fmt.Printf("PulsarBrokerURL %s, AllowedPulsarURLs %v,PulsarTLSAllowInsecureConnection %s,PulsarTLSValidateHostname %s\n",
 		Config.PulsarBrokerURL, AllowedPulsarURLs, Config.PulsarTLSAllowInsecureConnection, Config.PulsarTLSValidateHostname)
+	return &Config
 }
 
 //GetConfig returns a reference to the Configuration
