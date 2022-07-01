@@ -2,6 +2,7 @@ package route
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/gorilla/mux"
 
@@ -25,8 +26,17 @@ func NewRouter(mode *string) *mux.Router {
 			Path(route.Pattern).
 			Name(route.Name).
 			Handler(route.AuthFunc(handler))
-
 	}
+	
+	router.Handle("/debug/pprof", http.HandlerFunc(pprof.Index))
+	router.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	router.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	router.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	router.Handle("/debug/pprof/block", pprof.Handler("block"))
+	router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	router.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	
 	// TODO rate limit can be added per route basis
 	router.Use(middleware.LimitRate)
 
@@ -36,7 +46,7 @@ func NewRouter(mode *string) *mux.Router {
 
 // GetEffectiveRoutes gets effective routes
 func GetEffectiveRoutes(mode *string) Routes {
-	return append(PprofRoute, append(PrometheusRoute, getRoutes(mode)...)...)
+	return append(PrometheusRoute, getRoutes(mode)...)
 }
 
 func getRoutes(mode *string) Routes {
