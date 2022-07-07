@@ -82,6 +82,8 @@ type Configuration struct {
 
 	// HTTPAuthImpl specifies the jwt authen and authorization algorithm, `noauth` to skip JWT authentication
 	HTTPAuthImpl string `json:"HTTPAuthImpl"`
+	
+	WorkerPoolSize int `json:"WorkerPoolSize"`
 }
 
 var (
@@ -107,6 +109,10 @@ func Init() {
 	ReadConfigFile(configFile)
 
 	log.SetLevel(logLevel(Config.LogLevel))
+	
+    if Config.WorkerPoolSize <= 0 {
+		Config.WorkerPoolSize = 4
+	}
 
 	log.Warnf("Configuration built from file - %s", configFile)
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
