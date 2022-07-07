@@ -67,9 +67,6 @@ func (c *PulsarClient) GetClient(url, tokenStr string) (pulsar.Client, error) {
 		log.Errorf("failed instantiate pulsar client %v", err)
 		return nil, fmt.Errorf("Could not instantiate Pulsar client: %v", err)
 	}
-	if log.GetLevel() == log.DebugLevel {
-		log.Debugf("pulsar client url %s\n token %s", url, tokenStr)
-	}
 
 	c.client = driver
 	return driver, nil
