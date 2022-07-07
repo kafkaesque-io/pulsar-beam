@@ -59,7 +59,10 @@ func ResponseErrorJSON(e error, w http.ResponseWriter, statusCode int) {
 
 // ReceiverHeader parses headers for Pulsar required configuration
 func ReceiverHeader(allowedClusters []string, h *http.Header) (token, topicFN, pulsarURL string, err error) {
-	token = strings.TrimSpace(strings.Replace(h.Get("Authorization"), "Bearer", "", 1))
+    token = ""
+    if GetConfig().PulsarTokenHeaderName != "" {
+        token = strings.TrimSpace(strings.Replace(h.Get(GetConfig().PulsarTokenHeaderName), "Bearer", "", 1))
+    }
 	topicFN = h.Get("TopicFn")
 	pulsarURL = h.Get("PulsarUrl")
 	if len(allowedClusters) > 1 || (len(allowedClusters) == 1 && allowedClusters[0] != "") {

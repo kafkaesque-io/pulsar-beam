@@ -85,6 +85,9 @@ type Configuration struct {
 	
     // Limit concurency of receiver. Every worker will need to allocate a buffer memory (default is 5MB)
 	WorkerPoolSize int `json:"WorkerPoolSize"`
+    
+    // Name of the HTTP header to use for Pulsar token to authorize pulsar client, set tp empty to disable pulsar token authorization
+    PulsarTokenHeaderName string `json:"PulsarTokenHeaderName"`
 }
 
 var (
@@ -107,13 +110,16 @@ var (
 // Init initializes configuration
 func Init() {
 	configFile := AssignString(os.Getenv("PULSAR_BEAM_CONFIG"), DefaultConfigFile)
+    
+    // Default config
+    Config.WorkerPoolSize = 4
+    Config.PulsarTokenHeaderName = "Authorization"
+    
 	ReadConfigFile(configFile)
+    
+    fmt.Printf("PulsarTokenHeaderName %s", Config.PulsarTokenHeaderName)
 
 	log.SetLevel(logLevel(Config.LogLevel))
-	
-    if Config.WorkerPoolSize <= 0 {
-		Config.WorkerPoolSize = 4
-	}
 
 	log.Warnf("Configuration built from file - %s", configFile)
 	JWTAuth = icrypto.NewRSAKeyPair(Config.PulsarPrivateKey, Config.PulsarPublicKey)
