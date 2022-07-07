@@ -83,6 +83,7 @@ type Configuration struct {
 	// HTTPAuthImpl specifies the jwt authen and authorization algorithm, `noauth` to skip JWT authentication
 	HTTPAuthImpl string `json:"HTTPAuthImpl"`
 	
+    // Limit concurency of receiver. Every worker will need to allocate a buffer memory (default is 5MB)
 	WorkerPoolSize int `json:"WorkerPoolSize"`
 }
 
