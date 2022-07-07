@@ -12,6 +12,11 @@ RUN apk --no-cache add build-base git
 RUN go install github.com/google/gops@latest
 
 WORKDIR /root/
+
+# Cache dependencies download
+ADD go.mod go.sum ./
+RUN go mod graph | awk '{if ($1 !~ "@") print $2}' | xargs go get
+
 ADD . /root
 RUN cd /root/src && go build -o pulsar-beam
 
