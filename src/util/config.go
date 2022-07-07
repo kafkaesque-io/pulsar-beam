@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+    "strconv"
 
 	"unicode"
 
@@ -140,14 +141,35 @@ func ReadConfigFile(configFile string) {
 	for i := 0; i < fields.NumField(); i++ {
 		field := fields.Field(i).Name
 		f := st.FieldByName(field)
+        envV := os.Getenv(field)
 
-		if f.Kind() == reflect.String {
-			envV := os.Getenv(field)
-			if len(envV) > 0 && f.IsValid() && f.CanSet() {
-				f.SetString(strings.TrimSuffix(envV, "\n")) // ensure no \n at the end of line that was introduced by loading k8s secrete file
-			}
-			os.Setenv(field, f.String())
-		}
+        switch f.Kind() {
+            case reflect.String:
+                if len(envV) > 0 && f.IsValid() && f.CanSet() {
+                    f.SetString(strings.TrimSuffix(envV, "\n")) // ensure no \n at the end of line that was introduced by loading k8s secrete file
+                }
+                os.Setenv(field, f.String())
+            case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+                if len(envV) > 0 && f.IsValid() && f.CanSet() {
+                    intVal, err := strconv.ParseInt(envV, 10, 64)
+                    if err != nil {
+                        panic(err)
+                    } else {
+                        f.SetInt(intVal)
+                    }
+                }
+                os.Setenv(field, strconv.FormatInt(f.Int(), 10))
+            case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+                if len(envV) > 0 && f.IsValid() && f.CanSet() {
+                    uintVal, err := strconv.ParseUint(envV, 10, 64)
+                    if err != nil {
+                        panic(err)
+                    } else {
+                        f.SetUint(uintVal)
+                    }
+                }
+                os.Setenv(field, strconv.FormatUint(f.Uint(), 10))
+        }
 	}
 
 	clusterStr := AssignString(Config.PulsarClusters, "")
