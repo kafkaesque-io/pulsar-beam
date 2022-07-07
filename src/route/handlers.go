@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,9 +25,27 @@ var singleDb db.Db
 
 const subDelimiter = "-"
 
+// 5MB + 1 byte buffer (default Pulsar message size limit is 5MB https://pulsar.apache.org/docs/concepts-messaging/)
+const workerBufferSize = 5242881
+
+var workerPool chan func(buffer []byte)
+
 // Init initializes database
 func Init() {
 	singleDb = db.NewDbWithPanic(util.GetConfig().PbDbType)
+	
+	log.Infof("Start worker pool with size = %d", util.GetConfig().WorkerPoolSize)
+	workerPool = make(chan func(buffer []byte), util.GetConfig().WorkerPoolSize)
+	
+	// Start a number of goroutine as worker pool
+	for i := 0; i < util.GetConfig().WorkerPoolSize; i++ {
+		go func() {
+			var buffer [workerBufferSize]byte
+			for f := range workerPool {
+				f(buffer[:])
+			}
+		}()
+	}
 }
 
 // TokenServerResponse is the json object for token server response
@@ -73,68 +90,97 @@ func StatusPage(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// Full message structure that contains all request information
-type InfoRichMessage struct {
-	Headers http.Header `json:"headers"`
-	Body    string `json:"body"`
-}
-
 // ReceiveHandler - the message receiver handler
 func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	var b []byte
-	var err error
-	if r.Header.Get("Content-Encoding") == "gzip" {
-		g, gerr := gzip.NewReader(r.Body)
-		if gerr != nil {
-			util.ResponseErrorJSON(gerr, w, http.StatusInternalServerError)
+	done := make(chan bool)
+	workerPool <- func(buffer []byte) {
+		var b []byte = buffer[:0]
+		var err error
+		var bufferSize int = 0
+		
+		defer r.Body.Close()
+		defer func() { done <- true }()
+		
+		// Include headers information into the message payload if url has includeHeaders=true
+		includeHeaders, isInfoRichMessage := r.URL.Query()["includeHeaders"]
+		
+		if isInfoRichMessage && includeHeaders[0] != "false"  {
+			for name, values := range r.Header {
+				b = append(append(append(append(b, name...), ": "...), values[0]...), "\r\n"...)
+			}
+			b = append(b, "\r\n\r\n"...)
+            bufferSize = len(b)
+		}
+		
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			g, gerr := gzip.NewReader(r.Body)
+			
+			if gerr != nil {
+				util.ResponseErrorJSON(gerr, w, http.StatusInternalServerError)
+				return
+			}
+			
+			defer g.Close()
+			
+            var n int
+			for {
+                n, err = g.Read(buffer[bufferSize:])
+                bufferSize += n
+                if err == io.EOF {
+                    break
+                } else if err != nil {
+                    util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
+                    return
+                } else if bufferSize >= workerBufferSize {
+                    util.ResponseErrorJSON(errors.New("Buffer overflow"), w, http.StatusInternalServerError)
+                    return
+                }
+            }
+		} else {
+            var n int
+            for {
+                n, err = r.Body.Read(buffer[bufferSize:])
+                bufferSize += n
+                if err == io.EOF {
+                    break
+                } else if err != nil {
+                    util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
+                    return
+                } else if bufferSize >= workerBufferSize {
+                    util.ResponseErrorJSON(errors.New("Buffer overflow"), w, http.StatusInternalServerError)
+                    return
+                }
+            }
+		}
+		
+		b = buffer[:bufferSize]
+		log.Debugf("Message buffer (size = %d): %s", bufferSize, b);
+		
+		token, topic, pulsarURL, err := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
+		if err != nil {
+			util.ResponseErrorJSON(err, w, http.StatusUnauthorized)
 			return
 		}
-		b, err = ioutil.ReadAll(g)
-	} else {
-		b, err = ioutil.ReadAll(r.Body)
-	}
-	defer r.Body.Close()
-	if err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusInternalServerError)
-		return
-	}
-	token, topic, pulsarURL, err := util.ReceiverHeader(util.AllowedPulsarURLs, &r.Header)
-	if err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusUnauthorized)
-		return
-	}
-	
-	// Include headers information into the message payload if url has includeHeaders=true
-	includeHeaders, isInfoRichMessage := r.URL.Query()["includeHeaders"]
-	
-	var infoRichMessage *InfoRichMessage
-    
-    if isInfoRichMessage && includeHeaders[0] != "false"  {
-        infoRichMessage = new(InfoRichMessage)
-		infoRichMessage.Headers = r.Header
-		infoRichMessage.Body = string(b)
-    }
-	
-	if infoRichMessage != nil {
-		b, _ = json.Marshal(infoRichMessage)
-	}
+		
+		topicFN, err2 := GetTopicFnFromRoute(mux.Vars(r))
+		if topic == "" && err2 != nil {
+			// only read topic from routes
+			util.ResponseErrorJSON(err2, w, http.StatusUnprocessableEntity)
+			return
+		}
+		topicFN = util.AssignString(topic, topicFN) // header topicFn overwrites topic specified in the routes
+		log.Infof("topicFN %s pulsarURL %s", topicFN, pulsarURL)
 
-	topicFN, err2 := GetTopicFnFromRoute(mux.Vars(r))
-	if topic == "" && err2 != nil {
-		// only read topic from routes
-		util.ResponseErrorJSON(err2, w, http.StatusUnprocessableEntity)
+		pulsarAsync := r.URL.Query().Get("mode") == "async"
+		err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b, pulsarAsync)
+		if err != nil {
+			util.ResponseErrorJSON(err, w, http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 		return
 	}
-	topicFN = util.AssignString(topic, topicFN) // header topicFn overwrites topic specified in the routes
-	log.Infof("topicFN %s pulsarURL %s", topicFN, pulsarURL)
-
-	pulsarAsync := r.URL.Query().Get("mode") == "async"
-	err = pulsardriver.SendToPulsar(pulsarURL, token, topicFN, b, pulsarAsync)
-	if err != nil {
-		util.ResponseErrorJSON(err, w, http.StatusServiceUnavailable)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+	<-done
 	return
 }
 
