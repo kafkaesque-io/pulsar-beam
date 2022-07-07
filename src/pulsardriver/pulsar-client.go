@@ -29,6 +29,7 @@ func GetPulsarClient(pulsarURL, pulsarToken string, reset bool) (pulsar.Client, 
 	clientSync.Lock()
 	driver, ok := ClientCache[key]
 	if !ok {
+        log.Debugf("Creating new pulsar client cache %s\n token %s", pulsarURL, pulsarToken)
 		driver = &PulsarClient{}
 		driver.createdAt = time.Now()
 		driver.pulsarURL = pulsarURL
