@@ -100,11 +100,19 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		
 		defer r.Body.Close()
 		defer func() { done <- true }()
+        
+        // Include request line (GET /uri HTTP/1.1) into the message payload if url has includeRequestLine=true
+		includeRequestLine, isIncludeRequestLine := r.URL.Query()["includeRequestLine"]
+		
+		if isIncludeRequestLine && includeRequestLine[0] != "false"  {
+			b = append(append(append(append(append(append(b, r.Method...), " "...), r.RequestURI...), " "...), r.Proto...), "\r\n"...)
+            bufferSize = len(b)
+		}
 		
 		// Include headers information into the message payload if url has includeHeaders=true
-		includeHeaders, isInfoRichMessage := r.URL.Query()["includeHeaders"]
+		includeHeaders, isIncludeHeaders := r.URL.Query()["includeHeaders"]
 		
-		if isInfoRichMessage && includeHeaders[0] != "false"  {
+		if isIncludeHeaders && includeHeaders[0] != "false"  {
 			for name, values := range r.Header {
 				b = append(append(append(append(b, name...), ": "...), values[0]...), "\r\n"...)
 			}
