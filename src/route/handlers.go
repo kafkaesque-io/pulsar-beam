@@ -106,7 +106,6 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		
 		if isIncludeRequestLine && includeRequestLine[0] != "false"  {
 			b = append(append(append(append(append(append(b, r.Method...), " "...), r.RequestURI...), " "...), r.Proto...), "\r\n"...)
-            bufferSize = len(b)
 		}
 		
 		// Include headers information into the message payload if url has includeHeaders=true
@@ -116,9 +115,13 @@ func ReceiveHandler(w http.ResponseWriter, r *http.Request) {
 			for name, values := range r.Header {
 				b = append(append(append(append(b, name...), ": "...), values[0]...), "\r\n"...)
 			}
-			b = append(b, "\r\n\r\n"...)
-            bufferSize = len(b)
 		}
+        
+        // Append header delimiter (\r\n\r\n) and adjust the buffer size
+        if isIncludeRequestLine || isIncludeHeaders {
+            b = append(b, "\r\n\r\n"...)
+            bufferSize = len(b)
+        }
 		
 		if r.Header.Get("Content-Encoding") == "gzip" {
 			g, gerr := gzip.NewReader(r.Body)
