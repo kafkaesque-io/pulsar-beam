@@ -91,6 +91,13 @@ Pulsar Beam requires the same public and private keys to generate and verify JWT
 
 To disable JWT authentication, set the paramater `HTTPAuthImpl` in the config file or env variable to `noauth`.
 
+Notice: Pulsar Beam create one client connection per pulsar url per token, so using other authorization on top of Pulsar Beam may cause memory leak due to creating of a lot of pulsar client. In order to use other authorization like reverse proxy (like nginx) on top of Pulsar Beam, please disable Pulsar authorization by setting `PulsarTokenHeaderName` to empty string (default is "Authorization"). If you would like to keep both authorization of reverse proxy and Pulsar, please change `PulsarTokenHeaderName` to another header name that is different than "Authorization" or not using by reverse proxy.
+
+How to know that you are under memory leak?
+
+- Option 1: Use `gops` to check running go routine and if you are having a lot of routine that doing ping/pong with Pulsar brokers.
+- Option 2: We are using Pulsar Beam as http webhook receiver at https://doopage.com and we are able to handle few millions of request every day with CPU stable at <3% (8vCPU AWS) and Memory <40MB (`WorkerPoolSize` = 16). If you are using more resources than us, please try to set `PulsarTokenHeaderName` to empty string to check whether the problem is resolved.
+
 ### Sink source
 
 If a webhook's response contains a body and three headers including `Authorization` for Pulsar JWT, `TopicFn` for a topic fully qualified name, and `PulsarUrl`, the beam server will send the body as a new message to the Pulsar's topic specified as in TopicFn and PulsarUrl.
