@@ -149,7 +149,7 @@ This [CI script](./scripts/ci.sh) does linting, go vet and go build.
 The [code coverage script](./scripts/test_coverage.sh) runs unit test and tallies up the code coverage.
 
 ### How to run 
-The steps how to start the web server.
+The steps to start the web server.
 ```bash
 $ cd src
 $ go run main.go
